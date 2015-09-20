@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<!-- 
+Ref  touch events: http://www.javascriptkit.com/javatutors/touchevents.shtml
+     touch (double tap): http://www.javascriptkit.com/javatutors/touchevents.shtml
+ -->
+
+<html>
+<head>
+<style>
+  body {
+    margin: 0px;
+    position: fixed;
+	  overflow: auto;
+	  font-family: Cursive;
+  }
+  #info {
+	  position: absolute;
+	  bottom: 0px; width: 100%;
+	  padding: 25px;
+	  color: #cccc00;
+  }
+  #pointInfo {
+    position: absolute;
+		right: 0px;
+    padding: 5px;    
+		color: #aaaaaa;
+    text-align: center;
+  }
+  strong{
+    color: #ffff00;
+  }
+  h2{
+    position: absolute;
+	  top: 0px; width: 100%;
+    color: #ffffff;
+    text-align: center;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>Add-Delete-Modify with <u>Mouse</u> and <u>TouchScreen</u></h2>
+<div id="info">
+    
+  <strong>Add:</strong> Click the White Space<br/>
+  <strong>Delete:</strong> Double Click the Point <strong>/</strong> Drag the Point to the Trash<br/> 
+  <strong>Delete All:</strong> Double Click the Trash<br/>
+  <strong>Modify:</strong> Drag the Point to New Position<br/>
+</div>
+<div id="pointInfo"></div>
+
+<script src="../js/three.js/r70/three.min.js"></script>
+<script src="../js/OrbitControls.js"></script>
+
+<script>
+var scene, camera, renderer;
+var controls;
+var mouse = new THREE.Vector2();
+var touch = new THREE.Vector2();
+var pointInfoEle;
+
+var plane;	//point move space, sheet paper
+
+var sheet = new THREE.Object3D(), sheetH = 1280, sheetW = 6400;
+var point, points = [], selectedPoint, isSelected = false;
+var trash;
+
+init();
+animate();
+
+function init() {
+  pointInfoEle = window.document.getElementById ('pointInfo');
+  scene = new THREE.Scene();
+  
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+  camera.position.set(0,2500,0);
+  
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  
+  var gridHelper = new THREE.GridHelper( 640, 128 ); 
+  //scene.add( gridHelper );
+  
+  var axisHelper = new THREE.AxisHelper( 640 );
+  //scene.add( axisHelper );
+  /////
+  plane = new THREE.Mesh( new THREE.PlaneGeometry( sheetW, sheetH, 32 ), 
+					new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} ) );
+  sheet.add( plane );
+  sheet.rotation.set(-Math.PI/2,0,0);
+  scene.add( sheet );
+
+  point = new THREE.Mesh( new THREE.CylinderGeometry( 56, 56, 10, 32 ), 
+					new THREE.MeshBasicMaterial( {color: 0x789abc, opacity: 0.5, transparent: true} ) );
+  //scene.add( point );
+  
+  trash = new THREE.Mesh( new THREE.CylinderGeometry( 100, 75, 200, 8 ), 
+					new THREE.MeshBasicMaterial( {color: 0xaaaaaa, opacity: 0.8, transparent: true} ) );
+  trash.rotation.set(-Math.PI/2,0,0);
+  trash.position.set(sheetW/2-300,100,sheetH/2-150);
+  scene.add( trash );
+  /////
+  controls = new THREE.OrbitControls (camera, renderer.domElement);
+  controls.enabled = false;
+  document.body.appendChild( renderer.domElement);
+  window.addEventListener( 'resize', onWindowResize, false);
+  
+  //* set mouse Listener
+  window.addEventListener( 'mousedown', onDocumentMouseDown, false );
+  window.addEventListener( 'mousemove', onDocumentMouseMove, false );   //* set mouse vector
+  window.addEventListener( 'mouseup', onDocumentMouseUp, false );
+  window.addEventListener( 'dblclick',  onDocumentDoubleClick, false);
+  
+  //* set touch Listener and set touch vector 
+  window.addEventListener( 'touchstart', onDocumentTouchStart, false );   //* sigle/double tap 
+  window.addEventListener( 'touchmove', onDocumentTouchMove, false );
+  window.addEventListener( 'touchend', onDocumentTouchEnd, false );
+}
+
+function onWindowResize (){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize (window.innerWidth, window.innerHeight);
+}
+
+function onDocumentMouseDown( event ) {
+  event.preventDefault();
+  var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  
+  var inPlane = raycaster.intersectObject( plane );
+  var inPoint = raycaster.intersectObjects( points );
+  var inTrash = raycaster.intersectObject( trash );
+  
+  if (inPlane.length > 0 && inTrash.length==0) {
+    //controls.enabled = false;
+	  //* Modify: get current point
+    if (inPoint.length > 0) {
+  	  isSelected = true;
+	    selectedPoint = inPoint[0].object;
+	  }
+    //* Add
+    else {
+      var newPoint = point.clone();
+	    newPoint.position.copy( inPlane[0].point );
+      scene.add( newPoint );
+	    points.push( newPoint );
+	  }
+  }
+  else{
+    //controls.enabled = true;
+  }
+  
+}
+function onDocumentMouseMove( event ) {
+  event.preventDefault();
+  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+	
+  var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  
+  var inPlane = raycaster.intersectObject( plane );
+  if (inPlane.length > 0) {
+    var move = inPlane[0].point.clone();
+    point.position.copy( move );
+    if( isSelected )
+      selectedPoint.position.copy( move );
+  }
+}
+function onDocumentMouseUp( event ) {
+  event.preventDefault();
+  var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+  var inTrash = raycaster.intersectObject( trash );
+  if (inTrash.length > 0 && isSelected) {
+    //* Delete: drag to trash
+    selectedPoint.visible = false;
+    points.splice(points.indexOf(selectedPoint), 1); 
+  }
+  
+  if( isSelected )
+    isSelected = false;
+}
+function onDocumentDoubleClick( event ) {
+  event.preventDefault();
+  var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  
+  var inTrash = raycaster.intersectObject( trash );
+  if (inTrash.length > 0) {
+    //* Delete All
+    for(i=0; i<points.length; i++)
+      points[i].visible = false;
+	  points = new Array();
+  }
+  
+  var inPoint = raycaster.intersectObjects( points );
+  if (inPoint.length > 0) {
+    //* Delete: Double Click the Point
+    selectedPoint = inPoint[0].object;
+	  selectedPoint.visible = false;
+    points.splice(points.indexOf(selectedPoint), 1);
+  }
+  
+}
+
+var tapped=false;
+function onDocumentTouchStart( event ){ 
+  event.preventDefault();
+  var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+  touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+  touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+  var vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+    
+  var inPlane = raycaster.intersectObject( plane );
+  var inPoint = raycaster.intersectObjects( points );
+  var inTrash = raycaster.intersectObject( trash );
+  
+  if(!tapped){ //if tap is not set, set up single tap
+    tapped=setTimeout(function(){
+        tapped=null;
+        //alert("single");
+        //insert things you want to do when single tapped
+        //* onDocumentMouseDown
+        if (inPlane.length > 0 && inTrash.length==0) {
+          //controls.enabled = false;
+          //* Modify: get current point
+          if (inPoint.length > 0) {
+            isSelected = true;
+            selectedPoint = inPoint[0].object;
+          }
+          //* Add
+          else {
+            var newPoint = point.clone();
+            newPoint.position.copy( inPlane[0].point );
+            scene.add( newPoint );
+            points.push( newPoint );
+          }
+        }
+        else{
+          //controls.enabled = true;
+        }
+    },200);   //wait 300ms then run single click code
+  } 
+  else {    //tapped within 300ms of last tap. double tap
+    clearTimeout(tapped); //stop single tap callback
+    tapped=null;
+    //alert("double");
+    //insert things you want to do when double tapped
+    //* onDocumentDoubleClick
+    var inTrash = raycaster.intersectObject( trash );
+    if (inTrash.length > 0) {
+      //* Delete All
+      for(i=0; i<points.length; i++)
+        points[i].visible = false;
+      points = new Array();
+    }
+    
+    var inPoint = raycaster.intersectObjects( points );
+    if (inPoint.length > 0) {
+      //* Delete: Double Click the Point
+      selectedPoint = inPoint[0].object;
+      selectedPoint.visible = false;
+      points.splice(points.indexOf(selectedPoint), 1);
+    }
+  }
+  e.preventDefault();
+} 
+function onDocumentTouchMove( event ){
+  event.preventDefault();
+  var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+  touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+  touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+  var vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+  //* onDocumentMouseMove  
+  var inPlane = raycaster.intersectObject( plane );
+  if (inPlane.length > 0) {
+    var move = inPlane[0].point.clone();
+    point.position.copy( move );
+    if( isSelected )
+      selectedPoint.position.copy( move );
+  }
+}
+function onDocumentTouchEnd( event ){
+  event.preventDefault();
+  var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+  touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+  touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+  var vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+  //* onDocumentMouseUp  
+  var inTrash = raycaster.intersectObject( trash );
+  if (inTrash.length > 0 && isSelected) {
+    //* Delete: drag to trash
+    selectedPoint.visible = false;
+    points.splice(points.indexOf(selectedPoint), 1); 
+  }
+  
+  if( isSelected )
+    isSelected = false;
+}
+
+function animate(){
+  pointInfoEle.innerHTML = "amount<br\> "+points.length;
+  controls.update();
+  
+  requestAnimationFrame( animate );  
+  renderer.render( scene, camera);
+}
+
+</script>
+
+</body>
+</html>
