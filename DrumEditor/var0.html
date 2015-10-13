@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+</style>
+<link rel="stylesheet" type="text/css" href="../css/test.css">
+</head>
+
+<body>
+
+<h2>Drum Editor <strong>Var 0</strong> </h2>
+<div id="info">
+</div>
+
+<script src="../js/three.js/r70/three.min.js"></script>
+<script src="../js/myCommonFunction.js"></script>
+<script src="../js/dat.gui.min.js"></script>
+
+<script>
+var scene, camera, renderer;
+var mouse = new THREE.Vector2();
+var touch = new THREE.Vector2();
+var gui, parameters;
+var isMove = false, isByBeat = false, isBeatOn = false, isPreLoad = false;
+
+var tempo = 60;
+var beatTime = 60 / tempo * 1000;     // in ms
+var baseDistance = 128;               //* for Graph: grid, point
+var beatDistance = 128;               //* for Sound
+
+var displayObject = new THREE.Object3D(), displayField;
+var editorObject = new THREE.Object3D(), editorField;
+var sweepLine;
+
+var sounds = new DRUMKIT();
+var drumName = ["bass", "tomFl", "snare", "tomLw", "tomHh", "hatCl", "hatOp", "ride", "crash", "stick"];
+var drumPos  = [ 0.5   , 1.5   , 2.5    , 3.0    ,  3.5   ,  4.5   ,  4.75  ,  5.0   , 5.5   , 6.5    ];
+var drumNode = [];  // score ( in display sheet )
+var drumMesh = [];  // instruments
+
+
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+  
+  var gridHelper = new THREE.GridHelper( baseDistance*16, baseDistance ); 
+  //scene.add( gridHelper );
+  
+  var axisHelper = new THREE.AxisHelper( baseDistance*16 );
+  //scene.add( axisHelper );
+  
+  /////
+  // *Display Object
+  displayField = new THREE.Mesh( new THREE.PlaneGeometry( baseDistance*18, baseDistance*8, 32 ), 
+                                 new THREE.MeshBasicMaterial( {color: 0xffffff,
+                                                               polygonOffset: true,
+                                                               polygonOffsetFactor: 1.0,
+                                                               polygonOffsetUnits: 4.0} ) );                                       
+  displayField.rotation.set(-Math.PI/2, 0, 0);
+  displayObject.add( displayField );
+  
+  var lineGeometry = new THREE.Geometry();
+	var vertArray = lineGeometry.vertices;
+	vertArray.push( new THREE.Vector3(-baseDistance*8, 0, 0), new THREE.Vector3(baseDistance*8, 0, 0) );
+	lineGeometry.computeLineDistances();
+	var lineMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
+	var line = new THREE.Line( lineGeometry, lineMaterial );
+  for(var i=0; i<5; i++){                            
+    line.position.z = baseDistance*(i-2);
+    displayObject.add( line.clone() );
+  }
+  
+  displayObject.position.set(baseDistance*8, 0, -baseDistance*3);
+  scene.add( displayObject );
+  // Drum Node
+  for(var i=0; i<drumPos.length; i++){
+    var point = new score();
+    point.setSound(0, drumName[i], 1.0);
+    point.graph.mesh = new THREE.Mesh( new THREE.CylinderGeometry( 56, 56, 10, 32 )
+		                 , new THREE.MeshBasicMaterial( {color: 0x789abc, opacity: 0.5, transparent: true} ) ) ;
+    point.graph.mesh.position.z = - drumPos[i] * baseDistance;
+    point.setSound(0, drumName[i], 1.0);
+    drumNode[drumName[i]] = point;
+  }
+  // Sweep Line
+  sweepLine = new score();
+  sweepLine.setSound(beatTime, 'metronome_click', 1.0);
+  sweepLine.addGraph( new THREE.Mesh( new THREE.BoxGeometry( 8, 8, baseDistance*8 )
+                                    , new THREE.MeshBasicMaterial( {color: 0x789abc} ) ) );
+  sweepLine.graph.mesh.position.z = -baseDistance*3;
+  
+  // *Editor Object
+  editorField = new THREE.Mesh( new THREE.PlaneGeometry( baseDistance*18, baseDistance*4, 32 ), 
+                                new THREE.MeshBasicMaterial( {color: 0xffffff,
+                                                              polygonOffset: true,
+                                                              polygonOffsetFactor: 1.0,
+                                                              polygonOffsetUnits: 4.0} ) );                                     
+  editorField.rotation.set(-Math.PI/2, 0, 0);
+  editorField.position.set(baseDistance*8, 0, baseDistance*4);
+  scene.add( editorField );
+  
+  // Drum Kit Mesh
+  THREE.ImageUtils.crossOrigin = '';
+  for(var i=0; i<drumName.length; i++){
+    var drumImg = THREE.ImageUtils.loadTexture('http://jennyhyc.github.io/project/images/drum/'+drumName[i]+'.png');
+    var drumEle = new THREE.Mesh( new THREE.PlaneGeometry(baseDistance*2,baseDistance*2),//new THREE.SphereGeometry( blank/2, 32, 32 ), 
+                                  new THREE.MeshBasicMaterial( {
+                                                  map: drumImg,
+                                                  transparent: true, // for cut-out texture
+                                                  side: THREE.DoubleSide//,
+                                                  //polygonOffset: true,
+                                                  //polygonOffsetUnits: 4.0,
+                                                  //polygonOffsetFactor: 1.0
+                                                  } ) );
+    drumEle.position.set(baseDistance*2*(i-4),0,0);
+    drumMesh.push(drumEle);
+    drumEle.name = drumName[i];
+    editorObject.add(drumEle);
+  }
+  editorObject.rotation.set(-Math.PI/2, 0, 0);
+  editorObject.position.set(baseDistance*8, 0, baseDistance*4);
+  scene.add( editorObject );                                
+  /////////
+	// GUI //
+	/////////
+	gui = new dat.GUI();
+	parameters = {    
+    bpm: 60,
+    play: false,
+    beat: false, 
+    beatOn: false, 
+    playBySeq: false,
+    saveScore: function(){ //alert("save");
+      var soundInfo = [];
+      for(var i=0; i<scores.length; i++){
+        var sr = new soundRecord();
+        sr.time = scores[i].sound.time;
+        sr.instrument = scores[i].sound.instrument;
+        sr.intensity = scores[i].sound.intensity;
+        soundInfo.push(sr);
+      }
+      var scoresStr = JSON.stringify(soundInfo);
+      localStorage.setItem("myScores", scoresStr);
+    },
+    loadScore: function(){ //alert("load"); 
+      var scoresStr = localStorage.getItem("myScores");
+      var loadSounds = [];
+      try{
+        loadSounds = JSON.parse(scoresStr);
+        for(var i=0; i<loadSounds.length; i++){
+          var newNode =  new score();
+          newNode.addGraph( drumNode[ loadSounds[i].instrument ].graph.mesh );
+          newNode.setPosition( loadSounds[i].time*baseDistance );
+          newNode.setSound( loadSounds[i].time, loadSounds[i].instrument, loadSounds[i].intensity);
+          newNode.graph.mesh.material = new THREE.MeshBasicMaterial( {color: 0x123456, opacity: 0.5, transparent: true} );
+          scores.push( newNode );
+        }
+        //console.log("test JSON: "+loadSounds.length);
+        
+      }catch(e){
+        //throw a exception if parse null to json
+        console.log(scoresStr);
+      }
+    }, 
+    cleanAll:  function(){
+      for(var i=0; i<scores.length; i++)  scores[i].graph.mesh.visible = false;
+      scores = [];
+    }
+	};
+  var folder = gui.addFolder('Base Function');
+  var tempoF = folder.add( parameters, 'bpm' ).min(30).max(240).step(1).name('BPM').listen();
+  tempoF.onChange( function(value){ 
+                      tempo = value;
+                      beatTime = 60 / tempo * 1000;
+                      //sweepLine.graph.mesh.position.x = 0;
+                  } );
+  var playF = folder.add( parameters, 'play').name('Play').listen();
+  playF.onChange( function(value){
+    isMove = value; 
+    if(isMove)  moveLine();
+  });
+  var beatF = folder.add( parameters, 'beat').name('Beat').listen();
+  beatF.onChange( function(value){ isByBeat = value; } );
+  var beatOnF = folder.add( parameters, 'beatOn').name('Beat Sound ON').listen();
+  beatOnF.onChange( function(value){ isBeatOn = value } );
+  var bySeq = folder.add( parameters, 'playBySeq').name('PreLoad').listen();
+  bySeq.onChange( function(value){
+      isPreLoad = value;
+      if( isPreLoad ) playByPreLoadSound();  
+  });
+  folder.add( parameters, 'saveScore').name('Save').listen();
+  folder.add( parameters, 'loadScore').name('Load').listen();
+  folder.add( parameters, 'cleanAll').name('Clean').listen();
+  folder.open();
+  
+  // camera
+  var cameraPos = new THREE.Vector3();
+  cameraPos = displayObject.position.clone();
+  cameraPos.z += baseDistance*2;
+  camera.position.set(cameraPos.x, 1500, cameraPos.z+1);
+  camera.lookAt(cameraPos);
+  
+  /////
+  renderer = new THREE.WebGLRenderer();
+  renderer.setClearColor (0x888888);
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement);
+  window.addEventListener( 'resize', onWindowResize, false);
+  
+  //* set mouse Listener
+  window.addEventListener( 'mousedown', onDocumentMouseDown, false );
+  
+  //* set touch Listener and set touch vector 
+  window.addEventListener( 'touchstart', onDocumentTouchStart, false );   //* sigle/double tap 
+}
+
+function onWindowResize (){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize (window.innerWidth, window.innerHeight);
+}
+
+var previousTime = 0;
+var previousTime2 = 0;    // test range
+var curPos, prePos; 
+function animate(){
+  /* can't match the point -> if(in range) HIT */
+  if(isMove && !isByBeat){
+    var dt = context.currentTime - previousTime;
+    sweepLine.graph.mesh.position.x += baseDistance/(60/tempo)*dt;
+    curPos = sweepLine.graph.mesh.position.x;
+    if(prePos == undefined) prePos = curPos;
+    
+    // sweepLine
+    var hitBeatPos = Math.floor(curPos/baseDistance)*baseDistance;
+    if( prePos<hitBeatPos && curPos>=hitBeatPos ){  // sweepLine.graph.mesh.position.x % baseDistance == 0
+      console.log("Animate Play: "+(context.currentTime-previousTime2));
+      previousTime2 = context.currentTime;
+      if( isBeatOn ){
+        playSound(sounds[sweepLine.sound.instrument], 0, 1.0);  
+      }
+    }
+    if( sweepLine.graph.mesh.position.x > baseDistance*16){
+      sweepLine.graph.mesh.position.x = 0;
+    }
+    
+    // test Hit -> play score
+    if( !isPreLoad ){
+      for(var i=0; i<scores.length; i++){
+        var pos = scores[i].graph.mesh.position.x;
+        if( prePos<pos && curPos>=pos ){
+          playSound(sounds[scores[i].sound.instrument], 0, scores[i].sound.intensity);
+        }
+      }
+    }
+    
+    //baseDistance/(60/tempo)*dt;
+    previousTime = context.currentTime;
+    prePos = curPos;
+  }
+  else{
+    previousTime = context.currentTime;
+    previousTime2 = context.currentTime;
+    prePos = undefined; curPos = undefined;
+  }
+  /**/
+  requestAnimationFrame( animate );  
+  renderer.render( scene, camera);
+}
+
+var previousTimeB = 0;
+function moveLine(/*isMove, isByBeat, isBeatOn*/){
+  if( !isMove )  return;
+  
+  if( isByBeat ){
+    sweepLine.sound.time = beatTime;
+    sweepLine.graph.mesh.position.x = Math.floor(sweepLine.graph.mesh.position.x/baseDistance + 1 )*baseDistance;
+    
+    console.log("setTimeout Beat: "+(context.currentTime-previousTimeB));
+    previousTimeB = context.currentTime;
+    
+    if( isBeatOn ){
+      playSound(sounds[sweepLine.sound.instrument], 0, 1.0);  
+    }
+  }
+  /* delay !!! *./
+  else{
+    sweepLine.sound.time = beatTime / beatDistance;
+    sweepLine.graph.mesh.position.x += baseDistance / beatDistance;
+    //console.log("dt: "+sweepLine.sound.time+"\tdd: "+baseDistance/beatDistance+"\ttime: "+context.currentTime);
+    if( isBeatOn )
+      if(sweepLine.graph.mesh.position.x % baseDistance == 0){
+        playSound(sounds[sweepLine.sound.instrument], 0, 1.0);
+        console.log("setTimeout Play: "+(context.currentTime-previousTimeB));
+        //alert("setTimeout Play: "+context.currentTime);
+        previousTimeB = context.currentTime;
+      }
+        
+  }
+  /**/
+  if(sweepLine.graph.mesh.position.x > baseDistance*16)
+    sweepLine.graph.mesh.position.x = 0;
+    
+  setTimeout(function () {
+     moveLine();
+  }, sweepLine.sound.time);
+  
+  
+}
+
+function playByPreLoadSound(){
+  if( !isPreLoad || !isMove )  return;
+  sweepLine.graph.mesh.position.x = 0;
+  
+  var tmp = 60 / tempo;    
+  for(var i=0; i<scores.length; i++){
+    var currentTime = context.currentTime;
+    //console.log("tmp: "+tmp+"\tscores[i].sound.time: "+scores[i].sound.time);
+    playSound(sounds[scores[i].sound.instrument], currentTime+scores[i].sound.time*tmp, 1.0);
+  }
+  
+  setTimeout(function () {
+     playByPreLoadSound();
+  }, tmp*16000);
+}
+
+function onDocumentMouseDown( event ) {
+  event.preventDefault();
+  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  
+  var isHit = raycaster.intersectObjects( drumMesh );
+  if (isHit.length > 0) {
+    var hitting = isHit[0].object.name;
+    var curNode = new soundRecord();
+    curNode.instrument = drumNode[hitting].sound.instrument;        // instrument
+    curNode.time = sweepLine.graph.mesh.position.x / baseDistance;  // time (beat)
+    
+    playSound(sounds[ curNode.instrument ], 0, 1.0);
+    
+    var newNode =  new score();
+    newNode.addGraph( drumNode[hitting].graph.mesh );
+    newNode.setPosition( sweepLine.graph.mesh.position.x );
+    newNode.setSound( curNode.time, curNode.instrument, 1.0);
+    scores.push( newNode );
+  }
+}
+function onDocumentTouchStart( event ){ 
+  event.preventDefault();
+  var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+  touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+  touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+  var vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  
+  var isHit = raycaster.intersectObjects( drumMesh );
+  if (isHit.length > 0) {
+    var hitting = isHit[0].object.name;
+    var curNode = new soundRecord();
+    curNode.instrument = drumNode[hitting].sound.instrument;        // instrument
+    curNode.time = sweepLine.graph.mesh.position.x / baseDistance;  // time (beat)
+    
+    playSound(sounds[ curNode.instrument ], 0, 1.0);
+    
+    var newNode =  new score();
+    newNode.addGraph( drumNode[hitting].graph.mesh );
+    newNode.setPosition( sweepLine.graph.mesh.position.x );
+    newNode.setSound( curNode.time, curNode.instrument, 1.0);
+    scores.push( newNode );
+  }
+} 
+
+</script>
+
+</body>
+</html>

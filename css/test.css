@@ -1,0 +1,21 @@
+body {
+    margin: 0px;
+    position: fixed;
+	  overflow: auto;
+	  font-family: Cursive;
+  }
+#info {
+  position: absolute;
+  bottom: 0px; width: 100%;
+  padding: 25px;
+  color: #cccc00;
+}
+strong{
+  color: #ffff00;
+}
+h2{
+  position: absolute;
+  top: 0px; width: 100%;
+  color: #ffffff;
+  text-align: center;
+}
