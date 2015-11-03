@@ -7,6 +7,10 @@
   - test play mode
     - load sound first
     - HIT(node in the range) → PLAY sound
+- <a href="http://jennyhyc.github.io/project/DrumEditor/var1.html">Var 1</a>
+  - Screen Touch: dat.gui  → jQuery
+  - BarLine
+  - Metronome(half, quarter, eighth)
 
 <h4>Test</h4>
 - <a href="http://jennyhyc.github.io/project/test/Add-Delete-Modify.html" target="_blank">Add-Delete-Modify</a>: 
