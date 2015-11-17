@@ -176,6 +176,7 @@ function DRUMKIT(){
     clap : 'http://jennyhyc.github.io/project/sounds/drum/clap.mp3',
     stick: 'http://jennyhyc.github.io/project/sounds/drum/stick.mp3',
     
-    metronome_click: 'https://jyunming-chen.github.io/WebAudio/metronome_click.wav'
+    metronome_ding:  'http://jennyhyc.github.io/project/sounds/metronome/ding.mp3',
+    metronome_click: 'http://jennyhyc.github.io/project/sounds/metronome/click.mp3'
   });
 }
