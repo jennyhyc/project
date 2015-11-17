@@ -39,6 +39,7 @@ var beatInfoEle;
 var scene, camera, renderer;
 var controls;
 var mouse = new THREE.Vector2();
+var touch = new THREE.Vector2();
 var presstimer = null;    // long tap
 var tapSwitch = false, tapT, tapT0, tapT1;   // tap tempo
 
@@ -262,19 +263,33 @@ function init() {
   controls = new THREE.OrbitControls (camera, renderer.domElement);
   controls.enabled = false;
   //* set mouse Listener
-  window.addEventListener( 'mousedown', onDocumentMouseDown, false );
+  window.addEventListener( 'mousedown', function(){ onDocumentMouseDown(event, "mouse") }, false );
   window.addEventListener( 'mouseup', onDocumentMouseUp, false );
-  
+  //* set touch Listener and set touch vector 
+  window.addEventListener( 'touchstart', function(){ onDocumentMouseDown(event, "touch") }, false );
+  window.addEventListener( 'touchend', onDocumentMouseUp, false );
 }
 
-function onDocumentMouseDown( event ) {
+function onDocumentMouseDown( event , mode ) {
   event.preventDefault();
   
-  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  var vector, raycaster;
+  if( mode == "mouse" ){
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    
+    vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else if( mode == "touch" ){
+    var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+    touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+    touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
   
-  var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
-  var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+    vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else return;
   
   var inMetronome = raycaster.intersectObject( metronomeMesh );
   if( inMetronome.length == 1 ){
