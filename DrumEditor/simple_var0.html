@@ -142,7 +142,7 @@ function init() {
       // instrument & line
       var ins = new instrumentButton();
       var iline = line.clone();
-      ins.cylinder = new THREE.Mesh( new THREE.CylinderGeometry( cylinderR, cylinderR, 20, 32 ), 
+      ins.cylinder = new THREE.Mesh( new THREE.CylinderGeometry( cylinderR, cylinderR, unitX, 32 ), 
                                      new THREE.MeshBasicMaterial( {color: colorMode[ "onCylinder" ],
                                                                    polygonOffset: true,
                                                                    polygonOffsetUnits: 6.0,
@@ -163,13 +163,15 @@ function init() {
                                           polygonOffsetUnits: 2.0,
                                           polygonOffsetFactor: 1.0
                                         } ) );
-      ins.instrument.rotation.x = -Math.PI/2;                                              
-      iline.position.x = tmp;
-      if( i%2 == 0 )  tmpz = tmpz0;
-      else            tmpz = tmpz1;
+      ins.instrument.rotation.x = -Math.PI/2;
+                                                  
+      var tmpLineZ;
+      if( i%2 == 0 ){  tmpz = tmpz0;  tmpLineZ=-unitD}
+      else          {  tmpz = tmpz1;  tmpLineZ=-unitD*2.5}
+      iline.position.set(tmp, unitX/3, tmpLineZ);
       ins.cylinder.position.set(tmp, 0, tmpz);
-      ins.circle.position.set(tmp, 10, tmpz);
-      ins.instrument.position.set(tmp, 10, tmpz);
+      ins.circle.position.set(tmp, unitX/2, tmpz);
+      ins.instrument.position.set(tmp, unitX/2, tmpz);
       
       scene.add( iline );
       scene.add( ins.cylinder );
@@ -194,10 +196,10 @@ function init() {
     }
     
     // play line
-    var playLine = new THREE.Mesh( new THREE.PlaneGeometry( tmp*2, unitX, 32 ),
+    var playLine = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitX, 32 ),
                                    new THREE.MeshBasicMaterial( {color: colorMode["offCircle"]}) );
     playLine.rotation.x = -Math.PI/2;
-    playLine.position.z = tmpz1-unitD-unitX;
+    playLine.position.set(0, unitX, tmpz1-unitD-unitX);
     scene.add( playLine );
     sheetBottom = playLine.position.z;
     noteSheet.position.copy(playLine.position);
@@ -345,7 +347,7 @@ function init() {
   window.addEventListener( 'resize', onWindowResize, false);
   
   controls = new THREE.OrbitControls (camera, renderer.domElement);
-  controls.enabled = false;
+  //controls.enabled = false;
   
   //* set mouse Listener
   window.addEventListener( 'mousedown', function(){ onDocumentMouseDown(event, "mouse") }, false );
