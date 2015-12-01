@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<!--
+ - rollingSheet
+ - PlayStop_countin_Start
+-->
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../css/test.css">
+</head>
+
+<body>
+
+<h2></h2>
+<div id="info">
+
+<script src="../js/three.js/r70/three.min.js"></script>
+<script src="../js/OrbitControls.js"></script>
+<script src="../js/myCommonFunction.js"></script>
+
+<script>
+var scene, camera, renderer;
+var controls;
+var mouse = new THREE.Vector2();
+var touch = new THREE.Vector2();
+var presstimer = null;    // long tap
+var previousTime;
+
+var tempo = 200;//120;//60;
+var beatTime = 60 / tempo * 1000;     // in ms
+var beatPerBar = 4;
+
+var unitD = 600;
+var unitD2 = unitD*2;
+var unitX = 50;
+var unitT = unitD-unitX*2;  // for toolBar's Symbol
+var toolbarPosR = new THREE.Vector3(unitD*9, 0, -unitD*4);
+var toolbarPosL = new THREE.Vector3(-unitD*9, 0, -unitD*4);
+
+var instrumentAmount = 9;
+var drumName = ["hatCl", "hatOp", "snare", "tomHh", "bass", "tomLw", "tomFl", "crash", "ride"]; // , "stick"
+
+var instruments = [];
+var instrumentButtons = [];
+function instrumentButton(){
+  this.instrument = new THREE.Mesh();
+  this.isOn = true;                       // change: instrument on/off
+  this.cylinder = new THREE.Mesh();
+  this.circle = new THREE.Mesh();
+}
+var colorMode = [];  //"onCylinder", "onCircle", "offCylinder", "offCircle", "background"
+
+var notes = [];
+var noteSheet = new THREE.Object3D();
+var instrumentNotes = [];
+function instrumentNote(){
+  this.posx;
+  this.mesh = new THREE.Mesh();           // change: instrument on/off
+}
+
+var sheets = [];
+var sheetH = unitD2;// * beatPerBar;
+var sheetTop = -(unitD2*4 + sheetH);
+var sheetBottom;
+var beatLineMesh, barLineMesh;
+
+var toolbar = [];
+  var isStart = false;    //count-in
+  var isPlayed = false;
+  var playORpause = new THREE.Object3D();
+    var playButton = new THREE.Object3D();
+    var pauseButton = new THREE.Object3D();
+// metronome
+var isMetronomeSoundOn = true;
+var metroField = new THREE.Object3D();
+
+var beatGeometry = new THREE.CylinderGeometry( unitD/6, unitD/6, 5, 32 );//new THREE.SphereGeometry( unitD/6, 32, 32 );
+var beatMaterial = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+var beatMaterial_C = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+var beatMaterial_B = new THREE.MeshBasicMaterial( {color: 0x007700} );
+var currentBeat = -1;
+var countinBeat = -1;
+var beatMesh = [];
+
+var sounds = new DRUMKIT();
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+  //camera = new THREE.OrthographicCamera (-unitD*8, unitD*8, unitD*4.5, -unitD*4.5, 10, 3000);
+  camera.position.set(0,4000,0);
+  
+  var gridHelper = new THREE.GridHelper( unitD*10, unitD ); 
+  //scene.add( gridHelper );
+  gridHelper.position.y = -1;
+  
+  var axisHelper = new THREE.AxisHelper( unitD*10 );
+  //scene.add( axisHelper );
+  axisHelper.position.y = -1;
+  
+  /////
+  THREE.ImageUtils.crossOrigin = '';
+  
+  //* instrument & note
+    // line
+    var lineGeometry = new THREE.Geometry();
+    var vertArray = lineGeometry.vertices;
+    vertArray.push( new THREE.Vector3(0, 0, -unitD*5), new THREE.Vector3(0, 0, unitD*5) );
+    lineGeometry.computeLineDistances();
+    var lineMaterial = new THREE.LineDashedMaterial( { color: 0x282828, 
+                                                       dashSize: unitD*0.1, 
+                                                       gapSize: unitD*0.05,
+                                                       polygonOffset: true,
+                                                       polygonOffsetUnits: 10.0,
+                                                       polygonOffsetFactor: 5.0 } );
+    var line = new THREE.Line( lineGeometry, lineMaterial );
+    
+    // Button Color
+    colorMode[ "onCylinder" ] = new THREE.Color( 0x6699ff );
+    colorMode[ "onCircle" ] = new THREE.Color( 0x000066 );
+    colorMode[ "offCylinder" ] = new THREE.Color( 0x999999 );
+    colorMode[ "offCircle" ] = new THREE.Color( 0x333333 );
+    colorMode[ "background" ] = new THREE.Color( 0xffffff );
+    
+    // Instrument Button
+    var tmpx = unitD*1.5;
+    var tmp = - Math.floor(instrumentAmount/2)*tmpx;
+    var tmpz;
+    var tmpz0 = unitD*5 - unitD;
+    var tmpz1 = tmpz0 - tmpx;
+    var cylinderR = unitD - unitX;
+    var circleR = unitD-unitX*2;
+    for(var i=0; i<instrumentAmount; i++, tmp+=tmpx){
+      // instrument & line
+      var ins = new instrumentButton();
+      var iline = line.clone();
+      ins.cylinder = new THREE.Mesh( new THREE.CylinderGeometry( cylinderR, cylinderR, 20, 32 ), 
+                                     new THREE.MeshBasicMaterial( {color: colorMode[ "onCylinder" ],
+                                                                   polygonOffset: true,
+                                                                   polygonOffsetUnits: 6.0,
+                                                                   polygonOffsetFactor: 3.0} ));
+      ins.circle = new THREE.Mesh( new THREE.CircleGeometry( circleR, 32 ), 
+                                   new THREE.MeshBasicMaterial( {color: colorMode[ "onCircle" ] ,
+                                                                 polygonOffset: true,
+                                                                 polygonOffsetUnits: 4.0,
+                                                                 polygonOffsetFactor: 2.0} ));
+      ins.circle.rotation.x = -Math.PI/2;
+
+      var drumImg = THREE.ImageUtils.loadTexture('http://jennyhyc.github.io/project/images/drumSymbol/'+drumName[i]+'.png');
+      ins.instrument = new THREE.Mesh( new THREE.CircleGeometry( unitD-unitX*3, 32 ),//new THREE.PlaneGeometry(baseDistance*2,baseDistance*2),//new THREE.SphereGeometry( blank/2, 32, 32 ), 
+                                       new THREE.MeshBasicMaterial( {
+                                          map: drumImg,
+                                          transparent: true, // for cut-out texture
+                                          polygonOffset: true,
+                                          polygonOffsetUnits: 2.0,
+                                          polygonOffsetFactor: 1.0
+                                        } ) );
+      ins.instrument.rotation.x = -Math.PI/2;                                              
+      iline.position.x = tmp;
+      if( i%2 == 0 )  tmpz = tmpz0;
+      else            tmpz = tmpz1;
+      ins.cylinder.position.set(tmp, 0, tmpz);
+      ins.circle.position.set(tmp, 10, tmpz);
+      ins.instrument.position.set(tmp, 10, tmpz);
+      
+      scene.add( iline );
+      scene.add( ins.cylinder );
+      scene.add( ins.circle );
+      scene.add( ins.instrument );
+      
+      ins.cylinder.name = drumName[i];
+      instruments.push( ins.cylinder );
+      //instruments[ drumName[i] ] = ins.cylinder;
+      
+      instrumentButtons[ drumName[i] ] = ins;
+      
+      // note
+      var insNote = new instrumentNote();
+      insNote.posx = tmp;
+      insNote.mesh = new THREE.Mesh( new THREE.CylinderGeometry( unitX*3, unitX*3, 20, 32 ), 
+                                     new THREE.MeshBasicMaterial( {color: colorMode[ "onCylinder" ],
+                                                                   polygonOffset: true,
+                                                                   polygonOffsetUnits: 8.0,
+                                                                   polygonOffsetFactor: 4.0} ));
+      instrumentNotes[ drumName[i] ] = insNote;
+    }
+    
+    
+    
+    //console.log(instrumentButtons[ "bass" ]);
+    // play line
+    var playLine = new THREE.Mesh( new THREE.PlaneGeometry( tmp*2, unitX, 32 ),
+                                   new THREE.MeshBasicMaterial( {color: colorMode["offCircle"]}) );
+    playLine.rotation.x = -Math.PI/2;
+    playLine.position.z = tmpz1-unitD-unitX;
+    scene.add( playLine );
+    sheetBottom = playLine.position.z;
+    noteSheet.position.copy(playLine.position);
+    scene.add( noteSheet );
+    
+    
+    // instrument plane
+    var insPlane = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitD2*2, 32 ),
+                                   new THREE.MeshBasicMaterial( {color: colorMode[ "background" ],
+                                                                 polygonOffset: true,
+                                                                 polygonOffsetUnits: -2.0,
+                                                                 polygonOffsetFactor: -1.0}) );
+    insPlane.rotation.x = -Math.PI/2;
+    insPlane.position.z = playLine.position.z + unitD2;
+    scene.add( insPlane );
+  /* test *./
+  noteSheet.add(instrumentNotes["bass"].mesh.clone());
+  
+  var noteMesh = instrumentNotes["bass"].mesh.clone();
+  noteMesh.position.set(instrumentNotes["bass"].posx, 0, -1000);
+  scene.add( noteMesh );
+  var noteMesh2 = instrumentNotes["bass"].mesh.clone();
+  noteMesh2.position.set(instrumentNotes["bass"].posx, 0, -1500);
+  scene.add( noteMesh2 );
+  instrumentNotes["bass"].mesh.material.color = colorMode["offCylinder"];
+  var noteMesh3 = instrumentNotes["snare"].mesh.clone();
+  noteMesh3.position.set(instrumentNotes["snare"].posx, 0, -1500);
+  scene.add( noteMesh3 );
+  /**/
+  
+  //* sheet
+    // plane
+    var planGeometry = new THREE.PlaneBufferGeometry(unitD*16, sheetH, 32 );
+    var planeMesh = new THREE.Mesh( planGeometry, 
+                    new THREE.MeshBasicMaterial({ color: 0xeeeeee,
+                                                  polygonOffset: true,
+                                                  polygonOffsetUnits: 20.0,
+                                                  polygonOffsetFactor: 10.0}) );
+    planeMesh.rotation.x = -Math.PI/2;
+    planeMesh.position.z = sheetH/2;
+    // beat line
+    var lineGeometry = new THREE.Geometry();
+    var vertArray = lineGeometry.vertices;
+    vertArray.push( new THREE.Vector3(-unitD*8, 0, 0), new THREE.Vector3(unitD*8, 0, 0) );
+    lineGeometry.computeLineDistances();
+    var lineMaterial = new THREE.LineDashedMaterial( { color: 0xbfbfbf, 
+                                                       dashSize: unitD*0.4, 
+                                                       gapSize: unitD*0.05,
+                                                       polygonOffset: true,
+                                                       polygonOffsetUnits: 12.0,
+                                                       polygonOffsetFactor: 6.0 } );
+    beatLineMesh = new THREE.Line( lineGeometry, lineMaterial );
+    //scene.add( beatLineMesh );
+    // bar line
+    var lineGeometry = new THREE.Geometry();
+    var vertArray = lineGeometry.vertices;
+    vertArray.push( new THREE.Vector3(-unitD*8, 0, 0), new THREE.Vector3(unitD*8, 0, 0) );
+    lineGeometry.computeLineDistances();
+    var lineMaterial = new THREE.LineBasicMaterial( { color: 0x000000, 
+                                                      polygonOffset: true,
+                                                      polygonOffsetUnits: 12.0,
+                                                      polygonOffsetFactor: 6.0 } );
+    barLineMesh = new THREE.Line( lineGeometry, lineMaterial );
+    
+    var tmpBottom = playLine.position.z;
+    for(var i=0; i<16; i++){
+      var p = planeMesh.clone();
+      
+      sheets.push( new THREE.Object3D() );
+      sheets[i].add( p );
+      var sheetLine;
+      if( i%beatPerBar == 0 )   sheetLine = barLineMesh.clone();
+      else                      sheetLine = beatLineMesh.clone();
+      sheets[i].add( sheetLine );
+      sheets[i].position.z = tmpBottom + i*sheetH;
+      //console.log(i+": "+sheets[i].position.z);
+      scene.add( sheets[i] );
+    }
+    
+  //* tool
+    var symMaterial = new THREE.MeshBasicMaterial( { color: 0x333333,
+                                                      polygonOffset: true,
+                                                      polygonOffsetUnits: 2.0,
+                                                      polygonOffsetFactor: 1.0}  );
+    var symPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitT, unitT, 32 ),
+                                   new THREE.MeshBasicMaterial({ color: colorMode["background"],
+                                                                 polygonOffset: true,
+                                                                 polygonOffsetUnits: 4.0,
+                                                                 polygonOffsetFactor: 2.0}) );
+    symPlane.rotation.x = -Math.PI/2;
+    
+    //* playORpause
+    scene.add( playORpause );
+    symPlane.name = "playORpause";
+    scene.add( symPlane );
+    toolbar.push( symPlane );
+    playORpause.position.copy(toolbarPosR);
+    symPlane.position.copy(toolbarPosR);
+    
+      // play
+      var tLen = unitT/2;
+      var tShape = new THREE.Shape();
+      tShape.moveTo( tLen, 0 );
+      tShape.lineTo( -tLen, -tLen );
+      tShape.lineTo( -tLen,  tLen );
+      tShape.lineTo( tLen, 0 );
+      
+      var tt = new THREE.Mesh(new THREE.ShapeGeometry( tShape ), symMaterial);
+      tt.rotation.x = -Math.PI/2;
+      playButton.add( tt );
+      
+      playButton.add( symPlane.clone() );
+      playORpause.add( playButton.clone() ); //scene.add( playButton );
+      
+      // pause
+      var pWidth = unitX*3;
+      var planeMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(pWidth, unitT, 32 ), symMaterial );
+      planeMesh.rotation.x = -Math.PI/2;
+      var p1 = planeMesh.clone();
+      var p2 = planeMesh.clone();
+      p1.position.x = -pWidth;
+      p2.position.x =  pWidth;
+      pauseButton.add( p1 );
+      pauseButton.add( p2 );
+      pauseButton.add( symPlane.clone() );
+      //scene.add( pauseButton );
+    
+  //* metronome 
+    scene.add( metroField );
+    //* beatPerBar
+    for(var i=0; i<2; i++){
+      var mesh = new THREE.Mesh( beatGeometry, beatMaterial );
+      mesh.position.copy( toolbarPosL );
+      mesh.position.x += unitD/2*i;
+      metroField.add( mesh );
+      beatMesh.push( mesh );
+      //if( i >= beatPerBar )
+        //beatMesh[i].visible = false;
+    }
+  /////
+  renderer = new THREE.WebGLRenderer();
+  renderer.setClearColor ( colorMode[ "background" ] );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement);
+  window.addEventListener( 'resize', onWindowResize, false);
+  
+  controls = new THREE.OrbitControls (camera, renderer.domElement);
+  //controls.enabled = false;
+  
+  //* set mouse Listener
+  window.addEventListener( 'mousedown', function(){ onDocumentMouseDown(event, "mouse") }, false );
+  window.addEventListener( 'mouseup', onDocumentMouseUp, false );
+  //* set touch Listener and set touch vector 
+  window.addEventListener( 'touchstart', function(){ onDocumentMouseDown(event, "touch") }, false );
+  window.addEventListener( 'touchend', onDocumentMouseUp, false );
+  
+}
+function onDocumentMouseDown( event , mode ) {
+  event.preventDefault();
+  
+  var vector, raycaster;
+  if( mode == "mouse" ){
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    
+    vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else if( mode == "touch" ){
+    var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+    touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+    touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+    vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else return;
+  
+  //* instrument
+  var inInstrument = raycaster.intersectObjects( instruments );
+  if( inInstrument.length > 0 ){
+    var insName = inInstrument[0].object.name;
+    //console.log( insName );
+    
+    //* long click: continuous in/decrease
+      presstimer = setTimeout(function() {
+        console.log("long click !!!");
+        // change: instrument on/off
+        if( instrumentButtons[insName].isOn ){
+          instrumentButtons[insName].isOn = false;
+          instrumentButtons[insName].cylinder.material.color = colorMode["offCylinder"];
+          instrumentButtons[insName].circle.material.color = colorMode["offCircle"];
+          instrumentNotes[insName].mesh.material.color = colorMode["offCylinder"];
+        }
+        else{
+          instrumentButtons[insName].isOn = true;
+          instrumentButtons[insName].cylinder.material.color = colorMode["onCylinder"];
+          instrumentButtons[insName].circle.material.color = colorMode["onCircle"];
+          instrumentNotes[insName].mesh.material.color = colorMode["onCylinder"];
+        }
+      }, 500);
+      
+    //* add notes
+    if( instrumentButtons[insName].isOn ){
+      var newNote = instrumentNotes[insName].mesh.clone();
+      newNote.position.set(instrumentNotes[insName].posx, 0, -noteSheet.position.z+sheetBottom);
+      notes.push( newNote );
+      noteSheet.add( newNote );
+      
+      playSound(sounds[insName], 0, 1.0);
+    }
+  }
+  
+  //* tool bar
+  var inToolbar = raycaster.intersectObjects( toolbar );
+  if( inToolbar.length > 0 ){
+    switch( inToolbar[0].object.name){
+      case "playORpause":
+        scene.remove( playORpause );
+        playORpause = new THREE.Object3D();
+        playORpause.position.copy( toolbarPosR );
+        
+        isStart = !isStart;
+        if( isStart ){
+          playORpause.add( pauseButton.clone() );
+          
+          //* countin & metronome
+          //currentBeat ++;
+          countinBeat = -1;
+          for(var i=0; i<beatPerBar; i++){
+            setTimeout( function(){
+              //console.log("i: "+i);
+              countinBeat ++;
+              if( countinBeat%2 == 0 ){
+                beatMesh[0].material = beatMaterial_C;
+                beatMesh[1].material = beatMaterial;
+              }
+              else{
+                beatMesh[0].material = beatMaterial;
+                beatMesh[1].material = beatMaterial_C;
+              }
+          //* start (end of count-in)
+              if( countinBeat == beatPerBar-1 ){
+                beatMesh[countinBeat%2].material = beatMaterial_B;
+                isPlayed = true;
+                console.log("isPlayed");
+              }
+              /**/
+              //* sound
+              if( isMetronomeSoundOn ){
+                if( countinBeat < beatPerBar-1 )
+                  playSound(sounds['metronome_click'], 0, 1.0);
+                else
+                  playSound(sounds['metronome_ding'], 0, 1.0);
+              }
+              /**/
+            }, beatTime*i);
+          }
+          
+          
+        }
+        else{
+          isPlayed = false;
+          playORpause.add( playButton.clone() ); 
+        }
+        
+        scene.add( playORpause );
+        break;
+      
+      default:
+        break;
+    }
+    //console.log("isStart: " + isStart);
+  }
+}
+
+function onDocumentMouseUp( event ){
+  event.preventDefault();
+  
+  if(presstimer !== null) {
+    clearTimeout(presstimer);
+    //if(isOnMetrSet) isOnMetrSet = false;
+  }
+  
+}
+
+function onWindowResize (){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize (window.innerWidth, window.innerHeight);
+}
+
+function animate(){
+  /////
+  var dt = context.currentTime - previousTime;
+  previousTime = context.currentTime;
+  
+  /**/
+  if( isPlayed ){
+    noteSheet.position.z -= unitD/(60/tempo)*dt;
+    for(var i=0; i<sheets.length; i++){
+      if( isNaN(dt) )  break;
+      
+      //* hit sheetTop
+      if(sheets[i].position.z<sheetTop){
+        
+        var tmpBottom;
+        if( i == 0 )  tmpBottom = sheets[sheets.length-1].position.z + sheetH; 
+        else          tmpBottom = sheets[i-1].position.z + sheetH;
+        sheets[i].position.z = tmpBottom;
+      }
+      sheets[i].position.z -= unitD/(60/tempo)*dt;
+      
+    }
+  }
+  /**/
+  
+  /////
+  controls.update();
+   //console.log(camera.position.y);
+  requestAnimationFrame( animate );  
+  renderer.render( scene, camera);
+}
+
+</script>
+
+</body>
+</html>
