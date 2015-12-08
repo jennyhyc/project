@@ -347,7 +347,7 @@ function init() {
   window.addEventListener( 'resize', onWindowResize, false);
   
   controls = new THREE.OrbitControls (camera, renderer.domElement);
-  //controls.enabled = false;
+  controls.enabled = false;
   
   //* set mouse Listener
   window.addEventListener( 'mousedown', function(){ onDocumentMouseDown(event, "mouse") }, false );
