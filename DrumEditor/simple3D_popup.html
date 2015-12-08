@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../css/test.css">
+</head>
+
+<body>
+
+<h2></h2>
+<div id="info">
+
+<script src="../js/three.js/r70/three.min.js"></script>
+<script src="../js/OrbitControls.js"></script>
+<script src="http://pkin159.github.io/project/DrumKitGeometry.js"></script>
+<script src="../js/commonFunction.js"></script>
+
+<script>
+var scene, camera, renderer;
+var mouse = new THREE.Vector2();
+var touch = new THREE.Vector2();
+var controls;
+
+var unitD = 600;
+var unitD2 = unitD*2;
+var unitX = 50;
+
+var instrument3Ds = [];
+var bass = new Bass(15,75,-185);//15,75,-185
+var hihat = new Hihat( -150, 120, -150);
+var snare = new Snare( -75,110, -90);//-75,110, -90
+var tomL = new Tom(5, 170, -195, new THREE.Euler(Math.PI/8, Math.PI/4, 0, 'XYZ'));
+var tomR = new Tom(25, 170, -195, new THREE.Euler(Math.PI/8, Math.PI*3/4, 0, 'XYZ'));
+
+var sounds = new DRUMKIT();
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+  //camera = new THREE.OrthographicCamera(-unitD*16, unitD*16, unitD*9, -unitD*9, -unitD*5, unitD*5);
+  
+  //camera.position.set(0,4000,0);
+  camera.position.set( 0, 100, 300);
+  //camera.lookAt( 0, -300, 0 );
+  scene.add( camera );
+  
+  var gridHelper = new THREE.GridHelper( unitD*8, unitD ); 
+  //scene.add( gridHelper );
+  
+  var axisHelper = new THREE.AxisHelper( unitD*10 );
+  //scene.add( axisHelper );
+  
+  /////
+  
+  light = new THREE.PointLight(0xffffff);
+  light.position.set(200, 500, 400);
+  scene.add(light);
+  
+  // "hatCl", "hatOp", "snare", "tomHh", "bass", "tomLw", "tomFl", "crash", "ride"
+  tomL.name = "tomHh";
+  tomR.name = "tomLw";
+  hihat.name = "hatOp";
+  snare.name = "snare";
+  bass.name = "bass";
+  instrument3Ds.push( tomL );
+  instrument3Ds.push( tomR );
+  instrument3Ds.push( hihat );
+  instrument3Ds.push( snare );
+  instrument3Ds.push( bass );
+  
+  for(var i=0; i<instrument3Ds.length; i++){
+    var insName = instrument3Ds[i].name;
+    for(var j=0; j<instrument3Ds[i].children.length; j++){
+      instrument3Ds[i].children[j].name = insName;
+      instrument3Ds.push( instrument3Ds[i].children[j] );
+    }
+  }
+
+  scene.add(tomL);
+  scene.add(tomR);
+  scene.add(hihat);
+  scene.add(snare);
+  scene.add(bass);
+  
+  //instrument3Ds[0].scale.set(6,6,6);
+  
+  
+  /////
+  renderer = new THREE.WebGLRenderer();
+  renderer.setClearColor (0xffffff);
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement);
+  window.addEventListener( 'resize', onWindowResize, false);
+  
+  //controls = new THREE.OrbitControls (camera, renderer.domElement);
+  //controls.enabled = false;
+  
+  //* set mouse Listener
+  window.addEventListener( 'mousedown', function(event){ onDocumentMouseDown(event, "mouse"); }, false );
+  
+  //* set touch Listener and set touch vector 
+  window.addEventListener( 'touchstart', function(event){ onDocumentMouseDown(event, "touch"); }, false );
+  
+}
+
+function onDocumentMouseDown( event , mode ) {
+  event.preventDefault();
+  
+  var vector, raycaster;
+  if( mode == "mouse" ){
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    
+    vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else if( mode == "touch" ){
+    var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+    touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+    touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+    vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else return;
+  
+  var inInstrument3D = raycaster.intersectObjects( instrument3Ds );
+  if( inInstrument3D.length > 0 ){
+    //alert("hihi");
+    var insName = inInstrument3D[0].object.name;
+    window.opener.addNewNote( insName );
+    playSound(sounds[insName], 0, 1.0);
+    
+  }
+  
+}
+function onWindowResize (){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize (window.innerWidth, window.innerHeight);
+}
+
+function animate(){
+  //controls.update();
+  //console.log(camera.position);
+  requestAnimationFrame( animate );  
+  renderer.render( scene, camera);
+}
+
+</script>
+
+</body>
+</html>
