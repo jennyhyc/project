@@ -57,10 +57,11 @@ var instruments = [];
 var instrumentButtons = [];
 function instrumentButton(){
   this.instrument = new THREE.Mesh();
-  this.isOn = true;                       // change: instrument on/off
+  //this.isOn = true;                       // change: instrument on/off
   this.cylinder = new THREE.Mesh();
   this.circle = new THREE.Mesh();
 }
+var instrumentButtonsIsOn = [];             //instrumentButtonsIsOn[ currentTake ][ drumName ] = T/F
 
 var takes = [];
 var isTakeOn = [];
@@ -235,8 +236,10 @@ function init() {
     var cylinderR = unitD - unitX;
     var circleR = unitD-unitX*2;
     
-    for(var i=0; i<=takeAmount; i++)
+    for(var i=0; i<=takeAmount; i++){
       instrumentNotes[i] = [];
+      instrumentButtonsIsOn[i] = [];
+    }
     
     for(var i=0; i<instrumentAmount; i++, tmp+=tmpx){
       // instrument & line
@@ -295,6 +298,7 @@ function init() {
                                                                      polygonOffsetUnits: 8.0,
                                                                      polygonOffsetFactor: 4.0} ));
         instrumentNotes[j][ drumName[i] ] = insNote;
+        instrumentButtonsIsOn[j][ drumName[i] ] = true;
       }
     }
     
@@ -549,8 +553,14 @@ function onDocumentMouseDown( event , mode ) {
     currentTakeIcon.position.x += unitD;
     // instrument
     for(var i=0; i<instrumentAmount; i++){
-      instrumentButtons[ drumName[i] ].cylinder.material.color = colorTakes[currentTake].note;
-      instrumentButtons[ drumName[i] ].circle.material.color = colorTakes[currentTake].instrument;
+      if( instrumentButtonsIsOn[currentTake][drumName[i]] ){
+        instrumentButtons[ drumName[i] ].cylinder.material.color = colorTakes[currentTake].note;
+        instrumentButtons[ drumName[i] ].circle.material.color = colorTakes[currentTake].instrument;
+      }
+      else{
+        instrumentButtons[ drumName[i] ].cylinder.material.color = colorTakes[0].note;
+        instrumentButtons[ drumName[i] ].circle.material.color = colorTakes[0].instrument;
+      }
     }
   }
   /**/
@@ -559,26 +569,26 @@ function onDocumentMouseDown( event , mode ) {
   if( inInstrument.length > 0 ){
     var insName = inInstrument[0].object.name;
     
-    //* long click: continuous in/decrease
+    //* long click: on/off 
       presstimer = setTimeout(function() {
         //console.log("long click !!!");
         // change: instrument on/off
-        if( instrumentButtons[insName].isOn ){
-          instrumentButtons[insName].isOn = false;
-          instrumentButtons[insName].cylinder.material.color = colorMode["offCylinder"];
-          instrumentButtons[insName].circle.material.color = colorMode["offCircle"];
-          instrumentNotes[currentTake][insName].mesh.material.color = colorMode["offCylinder"];
+        if( instrumentButtonsIsOn[currentTake][insName] ){
+          instrumentButtonsIsOn[currentTake][insName] = false;
+          instrumentButtons[insName].cylinder.material.color = colorTakes[0].note;
+          instrumentButtons[insName].circle.material.color = colorTakes[0].instrument;
+          instrumentNotes[currentTake][insName].mesh.material.color = colorTakes[0].note;
         }
         else{
-          instrumentButtons[insName].isOn = true;
-          instrumentButtons[insName].cylinder.material.color = colorMode["onCylinder"];
-          instrumentButtons[insName].circle.material.color = colorMode["onCircle"];
-          instrumentNotes[currentTake][insName].mesh.material.color = colorMode["onCylinder"];
+          instrumentButtonsIsOn[currentTake][insName] = true;
+          instrumentButtons[insName].cylinder.material.color = colorTakes[currentTake].note;
+          instrumentButtons[insName].circle.material.color = colorTakes[currentTake].instrument;
+          instrumentNotes[currentTake][insName].mesh.material.color = colorTakes[currentTake].note;
         }
       },1000);
       
     //* add notes
-    if( instrumentButtons[insName].isOn ){
+    if( instrumentButtonsIsOn[currentTake][insName] ){
       playSound(sounds[insName], 0, 1.0);
       if( isPlayed ){
         // graph
@@ -845,7 +855,7 @@ function animate(){
       for( var i=currentScore; i<currentScoreEnd; i++){
         if( Math.abs( scores[i].time - currTime ) < dt ){
           //console.log("i: "+i);
-          if( instrumentButtons[scores[i].instrument].isOn && isTakeOn[scores[i].take]){
+          if( instrumentButtonsIsOn[scores[i].take][scores[i].instrument] && isTakeOn[scores[i].take]){
             scores[i].playScore();
             currentScore ++;
           }
