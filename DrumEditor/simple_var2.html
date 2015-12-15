@@ -785,11 +785,11 @@ function onDocumentMouseUp( event ){
 }
 
 function onWindowResize (){
-  /**./
+  /**/
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize (window.innerWidth, window.innerHeight);
-  /**/
+  /**./
   var w = window.innerWidth/16;
   var h = window.innerHeight/9;
   var tmp;
