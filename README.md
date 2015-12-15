@@ -1,6 +1,6 @@
 # project
 <h4>Drum Editor</h4>
-- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var2.html">Simple Var 1</a>
+- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var2.html">Simple Var 2</a>
   - takes: in/visible & clean
   - looper (4 beat)
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var1.html">Simple Var 1</a>
