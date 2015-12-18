@@ -1,18 +1,71 @@
 <!DOCTYPE html>
 <html>
+<head>
+<style>
+  input[type="number"] {
+    width:3em;
+  }
+</style>
+</head>
+
+<body>
 <h2>Coming Soon...</h2>
 
 <ul>
   <li>Metronome</li>
-  <ul>  <li>beats</li>
-        <li>tempo</li>
+  <ul>  <li>beats: <br/>
+            <input type="range" id="rangeBeats" onchange="updateRangeBeats(this.value);">
+            <input type="number" id = "beats" size="4"> </li>
+        <li>tempo: <br/> 
+            <input type="range" id="rangeTempo" onchange="updateRangeTempo(this.value);">
+            <input type="number" id = "tempo" size="4"> </li>
         <li>tempo - TapTempo</li>
   </ul>
+  <li>Looper</li>
   <li>Editor Mode</li>
   <ul>  <li>2D</li>
         <li>3D</li>
   </ul>
   <li>Instrument Style</li>
-  
 </ul>
+
+<button onclick="saveSetting()">OK</button>
+<br/>
+
+
+
+
+<script>
+setDefault();
+function setDefault() {
+  document.getElementById("beats").value = window.opener.beatPerBar;
+  document.getElementById("beats").min = window.opener.beatsMin;
+  document.getElementById("beats").max = window.opener.beatsMax;
+  document.getElementById("rangeBeats").value = window.opener.beatPerBar;
+  document.getElementById("rangeBeats").min = window.opener.beatsMin;
+  document.getElementById("rangeBeats").max = window.opener.beatsMax;
+  
+  document.getElementById("tempo").value = window.opener.tempo;
+  document.getElementById("tempo").min = window.opener.tempoMin;
+  document.getElementById("tempo").max = window.opener.tempoMax;
+  document.getElementById("rangeTempo").value = window.opener.tempo;
+  document.getElementById("rangeTempo").min = window.opener.tempoMin;
+  document.getElementById("rangeTempo").max = window.opener.tempoMax;
+}
+
+function saveSetting(){
+  var metroBeats = document.getElementById("beats").value;
+  var metroTempo = document.getElementById("tempo").value;
+  window.opener.setMetornome( metroBeats, metroTempo );
+  alert(metroBeats);
+}
+
+function updateRangeBeats( value ){
+  document.getElementById("beats").value = value; 
+}
+function updateRangeTempo( value ){
+  document.getElementById("tempo").value = value; 
+}
+</script>
+</body>
 </html>
