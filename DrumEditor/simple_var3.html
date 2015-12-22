@@ -50,9 +50,9 @@ var unitD = 600;
 var unitD2 = unitD*2;
 var unitX = 50;
 var unitT = unitD-unitX*2;  // for toolBar's Symbol
-var toolbarPosR = new THREE.Vector3(unitD*9, 0, -unitD*4);
+var toolbarPosR = new THREE.Vector3(unitD*9, 0, -unitD*5);
 var toolbarPosL = new THREE.Vector3(-unitD*9, 0, -unitD*4);
-var toolbarPosRB = new THREE.Vector3(unitD*9, 0, unitD*4);
+var toolbarPosRB = new THREE.Vector3(unitD*9, 0, unitD*5);
 var toolbarPosLB = new THREE.Vector3(-unitD*9, 0, unitD*4);
 var toolbarPosLC = new THREE.Vector3(-unitD*9, 0, 0);
 
@@ -96,14 +96,13 @@ function instrumentNote(){
 }
 
 var startTime = 0;      // isPlayed = true
-var currentScore = -1;  // stop -> loop
+var currentScore = 0;   // 
 var currentScoreEnd;
 var loopStartBar = 1;
 var loopEndBar = 3;
 var loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
 var loopEnd = loopEndBar * beatPerBar * beatTimeS;
 
- 
 var scores = [];
 function score(){
   this.take;
@@ -111,12 +110,21 @@ function score(){
   this.instrument;
   this.intensity;
 }
-score.prototype.setScore = function(time, instrument, intensity){
+score.prototype.setScore = function(take, time, instrument, intensity){
+  this.take = take;
   this.time = time;
   this.instrument = instrument;
   
   var vol = intensity || 1.0;
   this.intensity = vol;
+}
+score.prototype.isSame = function( s ){
+  if(this.take === s.take &&
+     this.time === s.time &&
+     this.instrument === s.instrument &&
+     this.intensity === s.intensity)
+    return true;
+  return false;
 }
 score.prototype.playScore = function( delta ){
   var dt = delta || 0;
@@ -475,6 +483,33 @@ function init() {
       scene.add( trashMesh );
       trashMesh.name = "trash";
       toolbar.push( trashMesh );
+  //* save & load
+    var saveMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/save.png");
+    var saveMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                      new THREE.MeshBasicMaterial({
+                                          color: colorMode[ "iconOn" ],
+                                          map: saveMap,
+                                          transparent: true, // for cut-out texture
+                                          side: THREE.DoubleSide }) );
+    saveMesh.rotation.x = -Math.PI/2;
+    saveMesh.position.copy(toolbarPosR);
+    saveMesh.position.x -= unitD/2;
+    scene.add( saveMesh );
+    saveMesh.name = "save";
+    toolbar.push( saveMesh );
+    var loadMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/load.png");
+    var loadMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                      new THREE.MeshBasicMaterial({
+                                          color: colorMode[ "iconOn" ],
+                                          map: loadMap,
+                                          transparent: true, // for cut-out texture
+                                          side: THREE.DoubleSide }) );
+    loadMesh.rotation.x = -Math.PI/2;
+    loadMesh.position.copy(saveMesh.position);
+    loadMesh.position.x += unitD;
+    scene.add( loadMesh );
+    loadMesh.name = "load";
+    toolbar.push( loadMesh );
   //* metronome 
     metroField.position.copy( toolbarPosL );
     scene.add( metroField );
@@ -607,8 +642,7 @@ function onDocumentMouseDown( event , mode ) {
         var s = new score();
         //var t = context.currentTime - startTime;
         var t = ( context.currentTime - startTime ) / beatTimeS;  // beat
-        s.setScore(t, insName);
-        s.take = currentTake;
+        s.setScore(currentTake, t, insName);
         scores.push( s );
       }
     }
@@ -768,7 +802,7 @@ function onDocumentMouseDown( event , mode ) {
           startTime = context.currentTime;
         }
         //* here: maybe pop-up window...
-        window.open('simpleSetting_popup.html','popupwindow','top=100, left=100, width=350,height=350,menu=0,status=0');
+        window.open('simpleSetting_popup.html','popupwindow','top=0, left=0, width=350,height=700,menu=0,status=0');
         console.log("setting");
         break;
       case "trash":
@@ -790,7 +824,8 @@ function onDocumentMouseDown( event , mode ) {
         for( var i=0; i<tmp.length; i++)
           if(tmp[i].take != currentTake)
             scores.push(tmp[i]);
-        if( currentScore != -1 ){
+        //if( currentScore != -1 ){
+          currentScore = 0;
           currentScoreEnd = scores.length;
           var currTime = context.currentTime - startTime;
           for(var i=0; i<scores.length; i++ )
@@ -798,7 +833,56 @@ function onDocumentMouseDown( event , mode ) {
               currentScore = i;
               break;
             }
-        }
+        //}
+        break;
+      case "save":
+        //* scores
+        var scoresStr = JSON.stringify(scores);
+        localStorage.setItem("myScores", scoresStr);
+        console.log("save length: "+scores.length);
+        break;
+      case "load":
+        //* scores
+        // load
+          var scoresStr = localStorage.getItem("myScores");
+          var loadScores = [];
+          try{
+            loadScores = JSON.parse(scoresStr);
+            console.log("load length: "+loadScores.length);
+          }catch(e){
+            //throw a exception if parse null to json
+            console.log("can't load as json\n"+scoresStr);
+          }
+        // check Repeat
+        var check;
+          for(var i=0; i<loadScores.length; i++){
+            var s = new score();
+            s.setScore( loadScores[i].take, loadScores[i].time, loadScores[i].instrument, loadScores[i].intensity);
+            check = true;
+            for(var j=0; j<scores.length; j++){
+              if( s.isSame( scores[j]) ){
+                check = false;
+                break;
+              }
+            }
+            if( check ){
+              scores.push( s );
+              
+              addNoteMesh( s );
+            }
+          }
+          //* set scores' info
+          var curTime = context.currentTime;
+          scores.sort( sortByTime );
+          currentScoreEnd = scores.length;
+          /**/
+          for(var i=0; i<currentScoreEnd; i++){
+            if( (scores[i].time * beatTimeS) > curTime ){
+              currentScore = i;
+              break;
+            }
+          }
+          console.log("curr length: "+scores.length);
         break;
       default:
         break;
@@ -838,11 +922,10 @@ function animate(){
   //previousTime = context.currentTime;
   var dt = clock.getDelta();
   /**/
-  if( isPlayed ){
-    console.log("current: "+currentScore);
+  
+  if( isStart ){
     //* Rolling Sheet
-      for(var i=0; i<=takeAmount; i++)
-        noteSheet[i].position.z -= sheetH/(60/tempo)*dt;
+      
       for(var i=0; i<sheets.length; i++){
         if( isNaN(dt) )  break;
         
@@ -856,11 +939,17 @@ function animate(){
         }
         sheets[i].position.z -= sheetH/(60/tempo)*dt;
      }
+  }
+  if( isPlayed ){
+    //* Rolling NoteSheet
+    for(var i=0; i<=takeAmount; i++)
+      noteSheet[i].position.z -= sheetH/(60/tempo)*dt;
+    console.log("current: "+currentScore);
     //* play scores
-    if( currentScore != -1 ){
+    //if( currentScore != -1 ){
       var currTime = context.currentTime - startTime;
       /* loop */
-      if(isLoop && Math.abs( loopEnd - currTime ) < dt){
+      if(isLoop &&  loopEnd < currTime ){
         console.log("!!!!!!!!!!!!!!!!!!!!!!!!");
         //console.log("loopEnd: "+loopEnd);
         startTime = context.currentTime - loopStart;
@@ -878,7 +967,7 @@ function animate(){
         /**/
         //currentScore = 0;
         currentScoreEnd = scores.length;
-        
+        /**/
         // sheet
         for(var i=0; i<sheetAmount; i++){
           sheets[i].position.z = sheetBottom + i*sheetH;
@@ -895,7 +984,7 @@ function animate(){
           noteSheet[i].position.z = playLine.position.z;
           noteSheet[i].position.z -= sheetH/(60/tempo)*loopStart;
         }
-        
+        /**/
       }
       /* play scores*/
       for( var i=currentScore; i<currentScoreEnd; i++){
@@ -905,32 +994,14 @@ function animate(){
           if( instrumentButtonsIsOn[scores[i].take][scores[i].instrument] && isTakeOn[scores[i].take]){
             scores[i].playScore();
             currentScore ++;
-          }
-          /**./
-          if( i == currentScoreEnd ){
-            //if( isLoop ){
-              //startTime = context.currentTime;
-              currentScore = 0;
-  
-              // sheet
-              /**./
-              for(var i=0; i<sheetAmount; i++)
-                sheets[i].position.z = sheetBottom + i*sheetH;
-              for(var i=0; i<=takeAmount; i++)
-                noteSheet[i].position.z = playLine.position.z;
-              /**/
-            //}
-          //}
-          /**/
-            
+          } 
         }
         else{
           currentScore = i;
           break;
         }
       }
-     
-    }
+    //}
   }
   /**/
   
@@ -980,6 +1051,15 @@ function playMetronome(){
   }, beatTime);
   
 }
+
+function addNoteMesh(s){
+  // graph
+  var newNote = instrumentNotes[s.take][s.instrument].mesh.clone();
+  newNote.position.set(instrumentNotes[s.take][s.instrument].posx, -unitX/1.5, (sheetH * s.time));
+  notes.push( newNote );
+  noteSheet[s.take].add( newNote );
+}
+
 //* for Popup Window
 function addNewNote(insName){
   //alert("!!!");
@@ -1011,22 +1091,9 @@ function addNewNote(insName){
       //}
     //}
 }
-/**./
-function sheetToHead( startToPlay ){
-  var start = startToPlay || false;
-  
-  // sheet
-  for(var i=0; i<sheetAmount; i++)
-    sheets[i].position.z = sheetBottom + i*sheetH;
-  noteSheet.position.z = playLine.position.z;
-  
-  if( start ) isPlayed = true;
-}
-/**/
 
 //* [pop-up] setting function
 function setMetornome( newBeats, newTempo ){
-  //* here
   tempo = Number( newTempo );       // Number(): for firefox
   beatTime = 60 / tempo * 1000;     // in ms
   beatTimeS = 60 / tempo;           // is s
@@ -1069,6 +1136,8 @@ function setMetornome( newBeats, newTempo ){
       sheets[i].position.z = sheetBottom + i*sheetH;
       scene.add( sheets[i] );
     }
+    for(var i=0; i<=takeAmount; i++)
+      noteSheet[i].position.z = playLine.position.z;
     //console.log("3: "+sheets.length);
 }
 
@@ -1077,6 +1146,76 @@ function setLooper( newStart, newEnd ){
   loopEndBar = Number( newEnd );
   loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
   loopEnd = loopEndBar * beatPerBar * beatTimeS;  
+}
+
+function setQuautize( note ){
+  scores.sort( sortByTime );
+  
+  var s = [];
+  for(var i=0; i<scores.length; i++){
+    s.push( scores[i] );
+    notes[i].visible = false;
+    scene.remove( notes[i] );
+  }
+  scores = [];  
+  notes = [];
+  
+  switch( note ){
+    case  4:
+      //console.log(4);
+      for(var i=0; i<s.length; i++){
+        s[i].time = Math.round( s[i].time );
+        if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+          scores.push( s[i] );
+          addNoteMesh( s[i] );
+        }
+      }
+      console.log( "4new: " + scores.length );
+      break;
+    case  8:
+      //console.log(8);
+      for(var i=0; i<s.length; i++){
+        var tmp0 = Math.floor( s[i].time );
+        var tmp1 = Math.round( s[i].time*10 ) / 10;
+        if( tmp1 - tmp0 < 0.5)
+          s[i].time = tmp0;
+        else
+          s[i].time = tmp0 + 0.5;
+        if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+          scores.push( s[i] );
+          addNoteMesh( s[i] );
+        }
+        //notes[i].position.z = sheetH * scores[i].time;
+      }
+      break;
+    case 16:
+      //console.log(16);
+      for(var i=0; i<s.length; i++){
+        var tmp0 = Math.floor( s[i].time );
+        var tmp1 = Math.round( s[i].time*100 ) / 100;
+        var tmp = tmp1 - tmp0 ;
+        if( tmp < 0.25)
+          s[i].time = tmp0;
+        else if( tmp < 0.5 )
+          s[i].time = tmp0 + 0.25;
+        else if( tmp < 0.75 )
+          s[i].time = tmp0 + 0.5;
+        else
+          s[i].time = tmp0 + 0.75;
+        if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+          scores.push( s[i] );
+          addNoteMesh( s[i] );
+        }
+        //notes[i].position.z = sheetH * scores[i].time;
+        console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
+      }
+      break;
+    default:
+      break;
+  }
+  currentScore = 0;
+  currentScoreEnd = scores.length;
+  /**/
 }
 </script>
 

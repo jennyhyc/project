@@ -12,11 +12,18 @@
     text-align: center;
     text-valign: center;
   }
+  .but {
+		width: 18%;
+		border-style:outset;
+	}
+  .note {
+		width: 100%;
+		padding-top:10%;
+	}
 </style>
 </head>
 
 <body>
-<h2>Coming Soon...</h2>
 
 <ul>
   <li>Metronome</li>
@@ -34,6 +41,17 @@
         <li>end: <br/> 
             <input type="number" id = "loopEndBar" size="4" onchange="updateLoopEnd(this.value);"> </li>
   </ul>
+  <li>Quautize</li>
+  <ul>  <button type="button" class="but" onclick="javascript:quautize( 4);"><img class="note" src="http://jennyhyc.github.io/project/images/note/4.png"/></button>
+        <button type="button" class="but" onclick="javascript:quautize( 8);"><img class="note" src="http://jennyhyc.github.io/project/images/note/8.png"/></button>
+        <button type="button" class="but" onclick="javascript:quautize(16);"><img class="note" src="http://jennyhyc.github.io/project/images/note/16.png"/></button>
+  </ul>
+</ul>
+  <div style="text-align:center">  
+    <button onclick="saveSetting()">OK</button>
+  </div>
+  
+<ul>
   <li>Editor Mode</li>
   <ul>  <li>2D</li>
         <li>3D</li>
@@ -41,7 +59,6 @@
   <li>Instrument Style</li>
 </ul>
 
-<button onclick="saveSetting()">OK</button>
 <br/>
 
 
@@ -50,7 +67,7 @@ var beatsMin = window.opener.beatsMin;
 var beatsMax = window.opener.beatsMax;
 var tempoMin = window.opener.tempoMin;
 var tempoMax = window.opener.tempoMax;
-
+var note = 0;
 setDefault();
 function setDefault() {
   document.getElementById("beats").value = window.opener.beatPerBar;
@@ -81,6 +98,8 @@ function saveSetting(){
   var loopStartBar = document.getElementById("loopStartBar").value;
   var loopEndBar = document.getElementById("loopEndBar").value;
   window.opener.setLooper( loopStartBar, loopEndBar );
+  
+  window.opener.setQuautize( note );
 }
 
 function updateRangeBeats( value ){ document.getElementById("beats").value = value; }
@@ -122,6 +141,10 @@ function updateLoopStart( value ){
   var loopEnd = Number( document.getElementById("loopEndBar").value );
   if( loopStart >= loopEnd )
     document.getElementById("loopStartBar").value = loopEnd-1;
+}
+
+function quautize( value ){
+  note = value;
 }
 </script>
 </body>
