@@ -3,7 +3,14 @@
 <head>
 <style>
   input[type="number"] {
-    width:3em;
+    width: 3em;
+  }
+  #tapTempo{
+    background: LightGray;
+    width: 10em;
+    height: 5em;
+    text-align: center;
+    text-valign: center;
   }
 </style>
 </head>
@@ -15,13 +22,18 @@
   <li>Metronome</li>
   <ul>  <li>beats: <br/>
             <input type="range" id="rangeBeats" onchange="updateRangeBeats(this.value);">
-            <input type="number" id = "beats" size="4"> </li>
+            <input type="number" id = "beats" size="4" onchange="updateBeats(this.value);"> </li>
         <li>tempo: <br/> 
             <input type="range" id="rangeTempo" onchange="updateRangeTempo(this.value);">
-            <input type="number" id = "tempo" size="4"> </li>
-        <li>tempo - TapTempo</li>
+            <input type="number" id = "tempo" size="4" onchange="updateTempo(this.value);"> </li>
+            <table id="tapTempo"> <tr><td >TapTempo</td></tr> </table>
   </ul>
   <li>Looper</li>
+  <ul>  <li>start: <br/>
+            <input type="number" id = "loopStartBar" size="4" onchange="updateLoopStart(this.value);"> </li>
+        <li>end: <br/> 
+            <input type="number" id = "loopEndBar" size="4" onchange="updateLoopEnd(this.value);"> </li>
+  </ul>
   <li>Editor Mode</li>
   <ul>  <li>2D</li>
         <li>3D</li>
@@ -33,38 +45,83 @@
 <br/>
 
 
-
-
 <script>
+var beatsMin = window.opener.beatsMin;
+var beatsMax = window.opener.beatsMax;
+var tempoMin = window.opener.tempoMin;
+var tempoMax = window.opener.tempoMax;
+
 setDefault();
 function setDefault() {
   document.getElementById("beats").value = window.opener.beatPerBar;
-  document.getElementById("beats").min = window.opener.beatsMin;
-  document.getElementById("beats").max = window.opener.beatsMax;
+  document.getElementById("beats").min = beatsMin;
+  document.getElementById("beats").max = beatsMax;
   document.getElementById("rangeBeats").value = window.opener.beatPerBar;
-  document.getElementById("rangeBeats").min = window.opener.beatsMin;
-  document.getElementById("rangeBeats").max = window.opener.beatsMax;
+  document.getElementById("rangeBeats").min = beatsMin;
+  document.getElementById("rangeBeats").max = beatsMax;
   
   document.getElementById("tempo").value = window.opener.tempo;
-  document.getElementById("tempo").min = window.opener.tempoMin;
-  document.getElementById("tempo").max = window.opener.tempoMax;
+  document.getElementById("tempo").min = tempoMin;
+  document.getElementById("tempo").max = tempoMax;
   document.getElementById("rangeTempo").value = window.opener.tempo;
-  document.getElementById("rangeTempo").min = window.opener.tempoMin;
-  document.getElementById("rangeTempo").max = window.opener.tempoMax;
+  document.getElementById("rangeTempo").min = tempoMin;
+  document.getElementById("rangeTempo").max = tempoMax;
+  
+  document.getElementById("loopStartBar").value = window.opener.loopStartBar;
+  document.getElementById("loopEndBar").value = window.opener.loopEndBar;
+  document.getElementById("loopStartBar").min = 0;
+  document.getElementById("loopEndBar").min = 1;
 }
 
 function saveSetting(){
   var metroBeats = document.getElementById("beats").value;
   var metroTempo = document.getElementById("tempo").value;
   window.opener.setMetornome( metroBeats, metroTempo );
-  alert(metroBeats);
+  
+  var loopStartBar = document.getElementById("loopStartBar").value;
+  var loopEndBar = document.getElementById("loopEndBar").value;
+  window.opener.setLooper( loopStartBar, loopEndBar );
 }
 
-function updateRangeBeats( value ){
-  document.getElementById("beats").value = value; 
+function updateRangeBeats( value ){ document.getElementById("beats").value = value; }
+function updateRangeTempo( value ){ document.getElementById("tempo").value = value; }
+
+function updateBeats( value ){  document.getElementById("rangeBeats").value = value;  }
+function updateTempo( value ){  document.getElementById("rangeTempo").value = value;  }
+
+var tapTempo = document.getElementById("tapTempo");
+var tapSwitch = false, tapT, tapT0, tapT1, BPMtmp;
+tapTempo.addEventListener( 'mousedown', function(event){ onTapTempo(event, "mouse"); }, false );
+tapTempo.addEventListener( 'touchstart', function(event){ onTapTempo(event, "touch"); }, false );
+
+function onTapTempo( event , mode ) {
+  tapSwitch = !tapSwitch;
+  if( tapSwitch ) tapT0 = performance.now();
+  else  tapT1 = performance.now();
+  tapT = Math.abs( tapT1-tapT0 );
+  if( !isNaN(tapT) ){
+    BPMtmp = Math.round( 60/tapT*1000 );  // bpm = 60/dt
+    if( BPMtmp > tempoMax ) BPMtmp = tempoMax;
+    else if( BPMtmp < tempoMin )  BPMtmp = tempoMin;
+    
+    document.getElementById("tempo").value = BPMtmp; 
+    document.getElementById("rangeTempo").value = BPMtmp;
+    //BPMnum.geometry = new THREE.TextGeometry( BPMtmp, textStyle ); 
+  }
 }
-function updateRangeTempo( value ){
-  document.getElementById("tempo").value = value; 
+
+function updateLoopEnd( value ){
+  var loopEnd = Number( value );
+  var loopStart = Number( document.getElementById("loopStartBar").value );
+  if( loopEnd <= loopStart )
+    document.getElementById("loopEndBar").value = loopStart+1;
+}
+
+function updateLoopStart( value ){
+  var loopStart = Number( value );
+  var loopEnd = Number( document.getElementById("loopEndBar").value );
+  if( loopStart >= loopEnd )
+    document.getElementById("loopStartBar").value = loopEnd-1;
 }
 </script>
 </body>
