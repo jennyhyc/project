@@ -32,24 +32,14 @@
             <input type="number" id = "beats" size="4" onchange="updateBeats(this.value);"> </li>
         <li>tempo: <br/> 
             <input type="range" id="rangeTempo" onchange="updateRangeTempo(this.value);">
-<<<<<<< HEAD
-            <input type="number" id = "tempo" size="4" onchange="updateTempo(this.value)"> </li>
-=======
             <input type="number" id = "tempo" size="4" onchange="updateTempo(this.value);"> </li>
->>>>>>> master
             <table id="tapTempo"> <tr><td >TapTempo</td></tr> </table>
   </ul>
   <li>Looper</li>
   <ul>  <li>start: <br/>
-<<<<<<< HEAD
-            <input type="number" id = "loopStart" size="4"> </li>
-        <li>end: <br/> 
-            <input type="number" id = "loopEnd" size="4"> </li>
-=======
             <input type="number" id = "loopStartBar" size="4" onchange="updateLoopStart(this.value);"> </li>
         <li>end: <br/> 
             <input type="number" id = "loopEndBar" size="4" onchange="updateLoopEnd(this.value);"> </li>
->>>>>>> master
   </ul>
   <li>Quautize</li>
   <ul>  <button type="button" class="but" onclick="javascript:quautize( 4);"><img class="note" src="http://jennyhyc.github.io/project/images/note/4.png"/></button>
@@ -93,36 +83,31 @@ function setDefault() {
   document.getElementById("rangeTempo").value = window.opener.tempo;
   document.getElementById("rangeTempo").min = tempoMin;
   document.getElementById("rangeTempo").max = tempoMax;
-<<<<<<< HEAD
-=======
   
   document.getElementById("loopStartBar").value = window.opener.loopStartBar;
   document.getElementById("loopEndBar").value = window.opener.loopEndBar;
   document.getElementById("loopStartBar").min = 0;
   document.getElementById("loopEndBar").min = 1;
->>>>>>> master
 }
 
 function saveSetting(){
   var metroBeats = document.getElementById("beats").value;
   var metroTempo = document.getElementById("tempo").value;
   window.opener.setMetornome( metroBeats, metroTempo );
-<<<<<<< HEAD
-=======
   
   var loopStartBar = document.getElementById("loopStartBar").value;
   var loopEndBar = document.getElementById("loopEndBar").value;
   window.opener.setLooper( loopStartBar, loopEndBar );
-<<<<<<< HEAD
->>>>>>> master
-=======
   
 <<<<<<< HEAD
   window.opener.setQuautize( note );
+<<<<<<< HEAD
 >>>>>>> master
 =======
   //window.opener.setQuautize( note );
 >>>>>>> master
+=======
+>>>>>>> a08b32babb7d23ffa9ae736edf124bc0c957d89b
 }
 
 function updateRangeBeats( value ){ document.getElementById("beats").value = value; }
@@ -150,8 +135,6 @@ function onTapTempo( event , mode ) {
     document.getElementById("rangeTempo").value = BPMtmp;
     //BPMnum.geometry = new THREE.TextGeometry( BPMtmp, textStyle ); 
   }
-<<<<<<< HEAD
-=======
 }
 
 function updateLoopEnd( value ){
@@ -166,7 +149,6 @@ function updateLoopStart( value ){
   var loopEnd = Number( document.getElementById("loopEndBar").value );
   if( loopStart >= loopEnd )
     document.getElementById("loopStartBar").value = loopEnd-1;
->>>>>>> master
 }
 
 function quautize( value ){
