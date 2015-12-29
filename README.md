@@ -1,5 +1,11 @@
 # project
 <h4>Drum Editor</h4>
+- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var3.html">Simple Var 3</a>
+  - setting plane
+    - metronome
+    - looper
+    - quautize
+  - save & load
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var2.html">Simple Var 2</a>
   - takes: in/visible & clean
   - looper (4 beat)
