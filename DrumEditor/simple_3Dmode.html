@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+</head>
+
+<body>
+popup 3D
+press f12
+
+<script>
+var tempo = window.opener.tempo;  // bpm
+var tmp = window.opener.scores;  // score
+
+function score3D(){
+  this.time;
+  this.intensity;
+  this.instrument;
+}
+
+var scores = [];
+for(var i=0; i<tmp.length; i++){
+  var curScore = new score3D();
+  curScore.time = tmp[i].time * 2;   // note4 -> note8
+  curScore.intensity = tmp[i].intensity;
+  //curScore.instrument = tmp.instrument;
+  //* drumName = ["hatCl", "hatOp", "snare", "tomHh", "bass", "tomLw", "tomFl", "crash", "ride"];
+  // change instruments' name 
+  switch( tmp[i].instrument ){
+    case "hatCl":
+      curScore.instrument = "";
+      break;
+    case "hatOp":
+      curScore.instrument = "";
+      break;
+    case "snare":
+      curScore.instrument = "";
+      break;
+    case "tomHh":
+      curScore.instrument = "";
+      break;
+    case "bass":
+      curScore.instrument = "b";
+      break;
+    case "tomLw":
+      curScore.instrument = "";
+      break;
+    case "tomFl":
+      curScore.instrument = "";
+      break;
+    case "crash":
+      curScore.instrument = "";
+      break;
+    case "ride":
+      curScore.instrument = "";
+      break;
+  }
+  scores.push( curScore );
+}
+
+console.log("tempo: "+tempo);
+console.log("score: "+scores.length);
+for(var i=0; i<scores.length; i++){
+  console.log( "time: " + scores[i].time 
+             + "\tintensity: " + scores[i].intensity
+             + "\tinstrument: " + scores[i].instrument );
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<!--
+ - rollingSheet
+ - PlayStop_countin_Start
+-->
+<html>
+<head>
+<style>
+  #insChange {
+    position: absolute;
+		right: 0px;
+    padding: 5px;    
+		color: #aaaaaa;
+    text-align: center;
+  }
+</style>
+<link rel="stylesheet" type="text/css" href="../css/test.css">
+</head>
+
+<body>
+
+<h2></h2>
+<div id="insChange">
+
+</div>
+
+<script src="../js/three.js/r70/three.min.js"></script>
+<script src="../js/OrbitControls.js"></script>
+<script src="../js/commonFunction.js"></script>
+
+<script>
+var scene, camera, renderer;
+var controls;
+var clock = new THREE.Clock();
+var mouse = new THREE.Vector2();
+var touch = new THREE.Vector2();
+var presstimer = null;    // long tap
+var tapped = null;        // double click
+var previousTime;
+
+var tempo = 120;
+var beatTime = 60 / tempo * 1000;     // in ms
+var beatTimeS = 60 / tempo ;          // is s
+var beatPerBar = 4;
+var tempoMin = 30, tempoMax = 300;
+var beatsMin = 0 , beatsMax = 8;
+
+var unitD = 600;
+var unitD2 = unitD*2;
+var unitX = 50;
+var unitT = unitD-unitX*2;  // for toolBar's Symbol
+var toolbarPosR = new THREE.Vector3(unitD*9, 0, -unitD*4);
+var toolbarPosL = new THREE.Vector3(-unitD*9, 0, -unitD*4);
+var toolbarPosRB = new THREE.Vector3(unitD*9, 0, unitD*5);
+var toolbarPosLB = new THREE.Vector3(-unitD*9, 0, unitD*5);
+var toolbarPosLC = new THREE.Vector3(-unitD*9, 0, 0);
+
+var instrumentAmount = 9;
+var drumName = ["hatCl", "hatOp", "snare", "tomHh", "bass", "tomLw", "tomFl", "crash", "ride"]; // , "stick"
+
+var instruments = [];
+var instrumentButtons = [];
+function instrumentButton(){
+  this.instrument = new THREE.Mesh();
+  //this.isOn = true;                       // change: instrument on/off
+  this.cylinder = new THREE.Mesh();
+  this.circle = new THREE.Mesh();
+}
+var instrumentButtonsIsOn = [];             //instrumentButtonsIsOn[ currentTake ][ drumName ] = T/F
+
+var takes = [];
+var isTakeOn = [];
+var takeAmount = 5;
+var currentTake = 5;
+var currentTakeIcon = new THREE.Object3D();
+
+//"onCylinder", "onCircle", "offCylinder", "offCircle", "background"
+//"iconOn", "iconOff", "beatInit", "beatCurrent", "beatOnBar" 
+var colorMode = [];
+//0: gray, 1:red, 2:orange, 3:yellow, 4:green, 5:yellow
+var colorTakes = [];
+function colorTake(i, n){
+  this.instrument = new THREE.Color(i);
+  this.note = new THREE.Color(n);
+}
+
+var playLine = new THREE.Object3D();
+
+var notes = [];
+var noteSheet = [];         // noteSheet[takes] = new THREE.Object3D();
+var instrumentNotes = [];   // instrumentNotes[ currentTake ][ drumName ]
+function instrumentNote(){
+  this.posx;
+  this.mesh = new THREE.Mesh();           // change: instrument on/off
+}
+
+var startTime = 0;      // isPlayed = true
+var currentScore = 0;   // 
+var currentScoreEnd;
+var loopStartBar = 1;
+var loopEndBar = 3;
+var loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
+var loopEnd = loopEndBar * beatPerBar * beatTimeS;
+
+var scores = [];
+function score(){
+  this.take;
+  this.time;
+  this.instrument;
+  this.intensity;
+}
+score.prototype.setScore = function(take, time, instrument, intensity){
+  this.take = take;
+  this.time = time;
+  this.instrument = instrument;
+  
+  var vol = intensity || 1.0;
+  this.intensity = vol;
+}
+score.prototype.isSame = function( s ){
+  if(this.take === s.take &&
+     this.time === s.time &&
+     this.instrument === s.instrument &&
+     this.intensity === s.intensity)
+    return true;
+  return false;
+}
+score.prototype.playScore = function( delta ){
+  var dt = delta || 0;
+  playSound(sounds[this.instrument], dt, this.intensity);
+}
+
+var sheets = [];
+var sheetH = unitD2;  // * beatPerBar;
+var sheetTop = -(unitD2*4 + sheetH);
+var sheetAmount = 16;
+var sheetBottom;      // playLine.position.z
+var planeMesh, beatLineMesh, barLineMesh;
+
+var toolbar = [];
+  var isStart = false;    //count-in
+  var isPlayed = false;
+  var playORpause = new THREE.Object3D();
+    var playButton = new THREE.Object3D();
+    var pauseButton = new THREE.Object3D();
+  // metronome
+  var metronomeMesh = new THREE.Mesh();
+  var isMetronomeOn = true;
+  var isMetronomeMute = false;
+  var isMetronomeDing = false;
+  var metroField = new THREE.Object3D();
+  // loop
+  var loopMesh = new THREE.Mesh();
+  var isLoop = false;
+  
+  var beatMesh = [];
+  var beatGeometry = new THREE.CylinderGeometry( unitD/6, unitD/6, 5, 32 );//new THREE.SphereGeometry( unitD/6, 32, 32 );
+  var currentBeat = -1;
+  
+
+var sounds = new DRUMKIT();
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  /**/
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+  camera.rotation.x = -Math.PI/2;
+  camera.position.set(0,4500,0);
+  /**./
+  camera = new THREE.OrthographicCamera (-unitD*12, unitD*12, unitD*6.75, -unitD*6.75, -200, 200);  //16:9
+  camera.rotation.x = -Math.PI/2;
+  camera.position.y = 200;
+  /**/
+  var gridHelper = new THREE.GridHelper( unitD*12, unitD ); 
+  //scene.add( gridHelper );
+  gridHelper.position.y = -1;
+  
+  var axisHelper = new THREE.AxisHelper( unitD*12 );
+  //scene.add( axisHelper );
+  axisHelper.position.y = -1;
+  
+  /////
+  THREE.ImageUtils.crossOrigin = '';
+  //* Color
+    colorMode[ "onCylinder" ] = new THREE.Color( 0x6699ff );
+    colorMode[ "onCircle" ] = new THREE.Color( 0x000066 );
+    colorMode[ "offCylinder" ] = new THREE.Color( 0x999999 );
+    colorMode[ "offCircle" ] = new THREE.Color( 0x333333 );
+    colorMode[ "background" ] = new THREE.Color( 0xffffff );
+    colorMode[ "iconOn" ] = new THREE.Color( 0x333333 );
+    colorMode[ "iconOff" ] = new THREE.Color( 0xcccccc );
+    // metronome
+    colorMode[ "beatInit" ] = new THREE.Color( 0xffff00 );
+    colorMode[ "beatCurrent" ] = new THREE.Color( 0xff0000 );
+    colorMode[ "beatOnBar" ] = new THREE.Color( 0x007700 );
+    // take: instrument(circle), note(cylinder)
+    colorTakes.push( new colorTake(0x333333, 0x999999) );
+    colorTakes.push( new colorTake(0x660000, 0xff0000) );
+    colorTakes.push( new colorTake(0x663300, 0xff6600) );
+    colorTakes.push( new colorTake(0xcc9900, 0xffff66) );
+    colorTakes.push( new colorTake(0x003300, 0x339933) );
+    colorTakes.push( new colorTake(0x000066, 0x6699ff) );
+    
+  //* take Button
+    for(var i=0; i<=takeAmount; i++){
+      var r = unitT/2;
+      var t =  new THREE.Mesh( new THREE.CylinderGeometry( r, r, 20, 32 ), 
+                               new THREE.MeshBasicMaterial( {color: colorTakes[i].note } )) ;
+      t.name = i;
+      takes[i] = t ;
+      if( i != 0 ){
+        takes[i].position.set(toolbarPosR.x, 0, unitD*(i-3));
+        scene.add(takes[i]);
+      }
+      isTakeOn.push( true );
+    }
+    var plane1 = new THREE.Mesh( new THREE.PlaneGeometry( unitT/2, unitX*2, 32 ), 
+                               new THREE.MeshBasicMaterial( {color: colorMode[ "iconOn" ]} ) );
+    plane1.rotation.x = -Math.PI/2;
+    var plane2 = plane1.clone();
+    plane2.rotation.z = Math.PI/2;
+    var tmp = unitT/4 - unitX;
+    plane1.position.z += tmp;
+    plane2.position.x -= tmp;
+    currentTakeIcon.add( plane1 );
+    currentTakeIcon.add( plane2 );
+    currentTakeIcon.rotation.y = -Math.PI/4;
+    currentTakeIcon.position.copy( takes[currentTake].position );
+    currentTakeIcon.position.x += unitD;
+    scene.add( currentTakeIcon );
+  //* instrument & note
+    // line
+    var lineGeometry = new THREE.Geometry();
+    var vertArray = lineGeometry.vertices;
+    vertArray.push( new THREE.Vector3(0, 0, -unitD*5), new THREE.Vector3(0, 0, unitD*5) );
+    lineGeometry.computeLineDistances();
+    var lineMaterial = new THREE.LineDashedMaterial( { color: 0x282828, 
+                                                       dashSize: unitD*0.1, 
+                                                       gapSize: unitD*0.05,
+                                                       polygonOffset: true,
+                                                       polygonOffsetUnits: 10.0,
+                                                       polygonOffsetFactor: 5.0 } );
+    var line = new THREE.Line( lineGeometry, lineMaterial );
+    
+    // Instrument Button
+    var tmpx = unitD*1.5;
+    var tmp = - Math.floor(instrumentAmount/2)*tmpx;
+    var tmpz;
+    var tmpz0 = unitD*4.75;//unitD*5 - unitD;
+    var tmpz1 = tmpz0 - tmpx;
+    var cylinderR = unitD - unitX;
+    var circleR = unitD-unitX*2;
+    
+    for(var i=0; i<=takeAmount; i++){
+      instrumentNotes[i] = [];
+      instrumentButtonsIsOn[i] = [];
+    }
+    
+    for(var i=0; i<instrumentAmount; i++, tmp+=tmpx){
+      // instrument & line
+      var ins = new instrumentButton();
+      var iline = line.clone();
+      ins.cylinder = new THREE.Mesh( new THREE.CylinderGeometry( cylinderR, cylinderR, unitX, 32 ), 
+                                     new THREE.MeshBasicMaterial( {color: colorTakes[currentTake].note,//colorMode[ "onCylinder" ],
+                                                                   polygonOffset: true,
+                                                                   polygonOffsetUnits: 6.0,
+                                                                   polygonOffsetFactor: 3.0} ));
+      ins.circle = new THREE.Mesh( new THREE.CircleGeometry( circleR, 32 ), 
+                                   new THREE.MeshBasicMaterial( {color: colorTakes[currentTake].instrument,//colorMode[ "onCircle" ] ,
+                                                                 polygonOffset: true,
+                                                                 polygonOffsetUnits: 4.0,
+                                                                 polygonOffsetFactor: 2.0} ));
+      ins.circle.rotation.x = -Math.PI/2;
+
+      var drumImg = THREE.ImageUtils.loadTexture('http://jennyhyc.github.io/project/images/drumSymbol/'+drumName[i]+'.png');
+      ins.instrument = new THREE.Mesh( new THREE.CircleGeometry( unitD-unitX*3, 32 ),//new THREE.PlaneGeometry(baseDistance*2,baseDistance*2),//new THREE.SphereGeometry( blank/2, 32, 32 ), 
+                                       new THREE.MeshBasicMaterial( {
+                                          map: drumImg,
+                                          transparent: true, // for cut-out texture
+                                          polygonOffset: true,
+                                          polygonOffsetUnits: 2.0,
+                                          polygonOffsetFactor: 1.0
+                                        } ) );
+      ins.instrument.rotation.x = -Math.PI/2;
+                                                  
+      var tmpLineZ;
+      if( i%2 == 0 ){  tmpz = tmpz0;  tmpLineZ=-unitD}
+      else          {  tmpz = tmpz1;  tmpLineZ=-unitD*2.5}
+      iline.position.set(tmp, unitX/3, tmpLineZ);
+      ins.cylinder.position.set(tmp, 0, tmpz);
+      ins.circle.position.set(tmp, unitX/2, tmpz);
+      ins.instrument.position.set(tmp, unitX/2, tmpz);
+      
+      scene.add( iline );
+      scene.add( ins.cylinder );
+      scene.add( ins.circle );
+      scene.add( ins.instrument );
+      
+      ins.cylinder.name = drumName[i];
+      instruments.push( ins.cylinder );
+      //instruments[ drumName[i] ] = ins.cylinder;
+      
+      instrumentButtons[ drumName[i] ] = ins;
+      
+      // note
+      for(var j=0; j<=takeAmount; j++){
+      //instrumentNotes[i] = [];
+        var insNote = new instrumentNote();
+        insNote.posx = tmp;
+        insNote.mesh = new THREE.Mesh( new THREE.CylinderGeometry( unitX*3, unitX*3, 20, 32 ), 
+                                       new THREE.MeshBasicMaterial( {color: colorTakes[j].note, //colorMode[ "onCylinder" ],
+                                                                     polygonOffset: true,
+                                                                     polygonOffsetUnits: 8.0,
+                                                                     polygonOffsetFactor: 4.0} ));
+        instrumentNotes[j][ drumName[i] ] = insNote;
+        instrumentButtonsIsOn[j][ drumName[i] ] = true;
+      }
+    }
+    
+    // play line
+    var currLine = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitX, 32 ),
+                                   new THREE.MeshBasicMaterial( {color: colorMode["offCircle"]}) );
+    currLine.rotation.x = -Math.PI/2;
+    playLine.add( currLine );
+    playLine.position.set(0, unitX, tmpz1-unitD-unitX);
+    scene.add( playLine );
+    sheetBottom = playLine.position.z;
+    
+    for(var i=0; i<=takeAmount; i++){
+      noteSheet.push( new THREE.Object3D() );
+      noteSheet[i].position.copy(playLine.position);
+      scene.add( noteSheet[i] );
+    }
+    
+    
+    
+    // instrument plane
+    var insPlane = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitD2*2, 32 ),
+                                   new THREE.MeshBasicMaterial( {color: colorMode[ "background" ],
+                                                                 polygonOffset: true,
+                                                                 polygonOffsetUnits: -2.0,
+                                                                 polygonOffsetFactor: -1.0}) );
+    insPlane.rotation.x = -Math.PI/2;
+    insPlane.position.z = playLine.position.z + unitD2;
+    scene.add( insPlane );
+  
+  //* sheet
+    // plane
+    var planGeometry = new THREE.PlaneBufferGeometry(unitD*16, sheetH, 32 );
+    planeMesh = new THREE.Mesh( planGeometry, 
+                new THREE.MeshBasicMaterial({ color: 0xeeeeee,
+                                              polygonOffset: true,
+                                              polygonOffsetUnits: 20.0,
+                                              polygonOffsetFactor: 10.0}) );
+    planeMesh.rotation.x = -Math.PI/2;
+    planeMesh.position.z = sheetH/2;
+    // beat line
+    var lineGeometry = new THREE.Geometry();
+    var vertArray = lineGeometry.vertices;
+    vertArray.push( new THREE.Vector3(-unitD*8, 0, 0), new THREE.Vector3(unitD*8, 0, 0) );
+    lineGeometry.computeLineDistances();
+    var lineMaterial = new THREE.LineDashedMaterial( { color: 0xbfbfbf, 
+                                                       dashSize: unitD*0.4, 
+                                                       gapSize: unitD*0.05,
+                                                       polygonOffset: true,
+                                                       polygonOffsetUnits: 12.0,
+                                                       polygonOffsetFactor: 6.0 } );
+    beatLineMesh = new THREE.Line( lineGeometry, lineMaterial );
+    //scene.add( beatLineMesh );
+    // bar line
+    var lineGeometry = new THREE.Geometry();
+    var vertArray = lineGeometry.vertices;
+    vertArray.push( new THREE.Vector3(-unitD*8, 0, 0), new THREE.Vector3(unitD*8, 0, 0) );
+    lineGeometry.computeLineDistances();
+    var lineMaterial = new THREE.LineBasicMaterial( { color: 0x000000, 
+                                                      polygonOffset: true,
+                                                      polygonOffsetUnits: 12.0,
+                                                      polygonOffsetFactor: 6.0 } );
+    barLineMesh = new THREE.Line( lineGeometry, lineMaterial );
+    
+    for(var i=0; i<sheetAmount; i++){
+      var p = planeMesh.clone();
+      
+      sheets.push( new THREE.Object3D() );
+      sheets[i].add( p );
+      var sheetLine;
+      if( i%beatPerBar == 0 )   sheetLine = barLineMesh.clone();
+      else                      sheetLine = beatLineMesh.clone();
+      sheets[i].add( sheetLine );
+      sheets[i].position.z = sheetBottom + i*sheetH;
+      scene.add( sheets[i] );
+    }
+    
+  //* tool
+    var symMaterial = new THREE.MeshBasicMaterial( { color: colorMode[ "iconOn" ],
+                                                      polygonOffset: true,
+                                                      polygonOffsetUnits: 2.0,
+                                                      polygonOffsetFactor: 1.0}  );
+    var symPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitT, unitT, 32 ),
+                                   new THREE.MeshBasicMaterial({ color: colorMode["background"],
+                                                                 polygonOffset: true,
+                                                                 polygonOffsetUnits: 4.0,
+                                                                 polygonOffsetFactor: 2.0}) );
+    symPlane.rotation.x = -Math.PI/2;
+    
+    //* playORpause
+    scene.add( playORpause );
+    symPlane.name = "playORpause";
+    scene.add( symPlane );
+    toolbar.push( symPlane );
+    playORpause.position.copy(toolbarPosLC);
+    symPlane.position.copy(toolbarPosLC);
+    
+      // play
+      var tLen = unitT/2;
+      var tShape = new THREE.Shape();
+      tShape.moveTo( tLen, 0 );
+      tShape.lineTo( -tLen, -tLen );
+      tShape.lineTo( -tLen,  tLen );
+      tShape.lineTo( tLen, 0 );
+      
+      var tt = new THREE.Mesh(new THREE.ShapeGeometry( tShape ), symMaterial);
+      tt.rotation.x = -Math.PI/2;
+      playButton.add( tt );
+      
+      playButton.add( symPlane.clone() );
+      playORpause.add( playButton.clone() ); //scene.add( playButton );
+      
+      // pause
+      var pWidth = unitX*2.5;
+      pauseMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(pWidth, unitT, 32 ), symMaterial );
+      pauseMesh.rotation.x = -Math.PI/2;
+      var p1 = pauseMesh.clone();
+      var p2 = pauseMesh.clone();
+      p1.position.x = -pWidth;
+      p2.position.x =  pWidth;
+      pauseButton.add( p1 );
+      pauseButton.add( p2 );
+      pauseButton.add( symPlane.clone() );
+      //scene.add( pauseButton );
+    
+    //* setting
+      var settingMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/setting.png");
+      var settingMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                        new THREE.MeshBasicMaterial({
+                                            color: colorMode[ "iconOn" ],
+                                            map: settingMap,
+                                            transparent: true, // for cut-out texture
+                                            side: THREE.DoubleSide }) );
+      settingMesh.rotation.x = -Math.PI/2;
+      settingMesh.position.copy(toolbarPosLB);
+      scene.add( settingMesh );
+      settingMesh.name = "setting";
+      toolbar.push( settingMesh );
+    //* loop
+      var loopMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/loop.png");
+      loopMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                 new THREE.MeshBasicMaterial({
+                                     color: colorMode[ "iconOff" ],
+                                     map: loopMap,
+                                     transparent: true, // for cut-out texture
+                                     side: THREE.DoubleSide }) );
+      loopMesh.rotation.x = -Math.PI/2;
+      loopMesh.position.copy(toolbarPosLC);
+      loopMesh.position.z += unitD*1.5;
+      scene.add( loopMesh );
+      loopMesh.name = "loop";
+      toolbar.push( loopMesh );
+      //loopMesh.visible = false;
+    //* trash
+      var trashMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/trash.png");
+      var trashMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                        new THREE.MeshBasicMaterial({
+                                            color: colorMode[ "iconOn" ],
+                                            map: trashMap,
+                                            transparent: true, // for cut-out texture
+                                            side: THREE.DoubleSide }) );
+      trashMesh.rotation.x = -Math.PI/2;
+      trashMesh.position.copy(toolbarPosRB);
+      trashMesh.position.z -= unitD*1.5;
+      scene.add( trashMesh );
+      trashMesh.name = "trash";
+      toolbar.push( trashMesh );
+  //* save & load
+    var saveMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/save.png");
+    var saveMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                      new THREE.MeshBasicMaterial({
+                                          color: colorMode[ "iconOn" ],
+                                          map: saveMap,
+                                          transparent: true, // for cut-out texture
+                                          side: THREE.DoubleSide }) );
+    saveMesh.rotation.x = -Math.PI/2;
+    saveMesh.position.copy(toolbarPosRB);
+    //saveMesh.position.z -= unitD *1.5;
+    saveMesh.position.x -= unitD/2;
+    scene.add( saveMesh );
+    saveMesh.name = "save";
+    toolbar.push( saveMesh );
+    var loadMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/load.png");
+    var loadMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                      new THREE.MeshBasicMaterial({
+                                          color: colorMode[ "iconOn" ],
+                                          map: loadMap,
+                                          transparent: true, // for cut-out texture
+                                          side: THREE.DoubleSide }) );
+    loadMesh.rotation.x = -Math.PI/2;
+    loadMesh.position.copy(saveMesh.position);
+    loadMesh.position.x += unitD;
+    scene.add( loadMesh );
+    loadMesh.name = "load";
+    toolbar.push( loadMesh );
+  //* 3Dglasses
+      var glassesMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/3Dglasses.png");
+      var glassesMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                        new THREE.MeshBasicMaterial({
+                                            //color: colorMode[ "iconOn" ],
+                                            map: glassesMap,
+                                            transparent: true, // for cut-out texture
+                                            side: THREE.DoubleSide }) );
+      glassesMesh.rotation.x = -Math.PI/2;
+      glassesMesh.position.copy(toolbarPosR);
+      scene.add( glassesMesh );
+      glassesMesh.name = "3D";
+      toolbar.push( glassesMesh );
+  //* metronome 
+    metroField.position.copy( toolbarPosL );
+    scene.add( metroField );
+    var metronomeMap = THREE.ImageUtils.loadTexture("http://jennyhyc.github.io/project/images/tool/metronome.png");
+    metronomeMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
+                                    new THREE.MeshBasicMaterial({
+                                        color: colorMode[ "iconOn" ],
+                                        map: metronomeMap,
+                                        transparent: true, // for cut-out texture
+                                        side: THREE.DoubleSide }) );
+    metronomeMesh.rotation.x = -Math.PI/2;
+    metroField.add( metronomeMesh );
+    metronomeMesh.name = "metronome";
+    toolbar.push( metronomeMesh );
+    //* beatPerBar
+    for(var i=0; i<2; i++){
+      var mesh = new THREE.Mesh( beatGeometry, new THREE.MeshBasicMaterial( {color: colorMode[ "beatInit" ]} ) );
+      mesh.position.set(unitD/2*i - unitD/4, 0, unitD);
+      
+      metroField.add( mesh );
+      beatMesh.push( mesh );
+    }
+    
+  /////
+  renderer = new THREE.WebGLRenderer();
+  renderer.setClearColor ( colorMode[ "background" ] );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement);
+  window.addEventListener( 'resize', onWindowResize, false);
+  
+  //controls = new THREE.OrbitControls (camera, renderer.domElement);
+  //controls.enabled = false;
+  
+  //* set mouse Listener
+  window.addEventListener( 'mousedown', function(event){ onDocumentMouseDown(event, "mouse"); }, false );
+  window.addEventListener( 'mouseup', onDocumentMouseUp, false );
+  //* set touch Listener and set touch vector 
+  window.addEventListener( 'touchstart', function(event){ onDocumentMouseDown(event, "touch"); }, false );
+  window.addEventListener( 'touchend', onDocumentMouseUp, false );
+  
+}
+function onDocumentMouseDown( event , mode ) {
+  event.preventDefault();
+  
+  var vector, raycaster;
+  if( mode == "mouse" ){
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    
+    vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else if( mode == "touch" ){
+    var touchobj = event.changedTouches[0]; // reference first touch point (ie: first finger)
+    touch.x = ( touchobj.clientX / window.innerWidth ) * 2 - 1;
+    touch.y = - ( touchobj.clientY / window.innerHeight ) * 2 + 1;
+  
+    vector = new THREE.Vector3( touch.x, touch.y, 0.5 ).unproject( camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+  }
+  else return;
+  //* take
+  /**/
+  var inTake = raycaster.intersectObjects( takes );
+  if( inTake.length > 0 ){
+    var takeName = inTake[0].object.name;
+    //* long click: (un)show this take
+      presstimer = setTimeout(function() {
+        //* here
+        isTakeOn[takeName] = !isTakeOn[takeName];
+        if( isTakeOn[takeName] ){
+          takes[takeName].material.color = colorTakes[takeName].note;
+          noteSheet[takeName].visible = true;
+        }
+        else{
+          takes[takeName].material.color = colorTakes[0].note;
+          noteSheet[takeName].visible = false;
+        }
+      },1000);
+    //console.log(takeName);
+    currentTake = takeName;
+    currentTakeIcon.position.copy( takes[currentTake].position );
+    currentTakeIcon.position.x += unitD;
+    // instrument
+    for(var i=0; i<instrumentAmount; i++){
+      if( instrumentButtonsIsOn[currentTake][drumName[i]] ){
+        instrumentButtons[ drumName[i] ].cylinder.material.color = colorTakes[currentTake].note;
+        instrumentButtons[ drumName[i] ].circle.material.color = colorTakes[currentTake].instrument;
+      }
+      else{
+        instrumentButtons[ drumName[i] ].cylinder.material.color = colorTakes[0].note;
+        instrumentButtons[ drumName[i] ].circle.material.color = colorTakes[0].instrument;
+      }
+    }
+  }
+  /**/
+  //* instrument
+  var inInstrument = raycaster.intersectObjects( instruments );
+  if( inInstrument.length > 0 ){
+    var insName = inInstrument[0].object.name;
+    
+    //* long click: on/off 
+      presstimer = setTimeout(function() {
+        //console.log("long click !!!");
+        // change: instrument on/off
+        if( instrumentButtonsIsOn[currentTake][insName] ){
+          instrumentButtonsIsOn[currentTake][insName] = false;
+          instrumentButtons[insName].cylinder.material.color = colorTakes[0].note;
+          instrumentButtons[insName].circle.material.color = colorTakes[0].instrument;
+          instrumentNotes[currentTake][insName].mesh.material.color = colorTakes[0].note;
+        }
+        else{
+          instrumentButtonsIsOn[currentTake][insName] = true;
+          instrumentButtons[insName].cylinder.material.color = colorTakes[currentTake].note;
+          instrumentButtons[insName].circle.material.color = colorTakes[currentTake].instrument;
+          instrumentNotes[currentTake][insName].mesh.material.color = colorTakes[currentTake].note;
+        }
+      },1000);
+      
+    //* add notes
+    if( instrumentButtonsIsOn[currentTake][insName] ){
+      playSound(sounds[insName], 0, 1.0);
+      if( isPlayed ){
+        // graph
+        var newNote = instrumentNotes[currentTake][insName].mesh.clone();
+        newNote.position.set(instrumentNotes[currentTake][insName].posx, -unitX/1.5, -noteSheet[currentTake].position.z+sheetBottom);
+        notes.push( newNote );
+        noteSheet[currentTake].add( newNote );
+        // score
+        var s = new score();
+        //var t = context.currentTime - startTime;
+        var t = ( context.currentTime - startTime ) / beatTimeS;  // beat
+        s.setScore(currentTake, t, insName);
+        scores.push( s );
+      }
+    }
+  }
+  
+  //* tool bar
+  var inToolbar = raycaster.intersectObjects( toolbar );
+  if( inToolbar.length > 0 ){
+    switch( inToolbar[0].object.name){
+      case "playORpause":
+        //* single click
+        if( tapped == undefined ){
+          tapped=setTimeout(function(){
+            tapped=null;
+            scene.remove( playORpause );
+            playORpause = new THREE.Object3D();
+            playORpause.position.copy( toolbarPosLC );
+            
+            isStart = !isStart;
+            if( isStart ){
+              playORpause.add( pauseButton.clone() );
+              
+              //* countin & metronome
+              var countinBeat = 0;
+              for(var i=0; i<beatPerBar; i++){
+                setTimeout( function(){
+                  countinBeat ++;
+                  if( countinBeat%2 == 0 ){
+                    beatMesh[1].material.color = colorMode[ "beatCurrent" ];
+                    beatMesh[0].material.color = colorMode[ "beatInit" ];
+                  }
+                  else{
+                    beatMesh[1].material.color = colorMode[ "beatInit" ];
+                    beatMesh[0].material.color = colorMode[ "beatCurrent" ];
+                  }
+                  
+              //* start (end of count-in)
+                  if( countinBeat == beatPerBar ){
+                    var tmp = countinBeat%2;
+                    if( tmp == 0 )  beatMesh[1].material.color = colorMode[ "beatOnBar" ];
+                    else            beatMesh[0].material.color = colorMode[ "beatOnBar" ];
+                    isPlayed = true;
+                    startTime = context.currentTime;
+                    //console.log("isPlay");
+                    
+                    playMetronome();
+                  }
+                  /**/
+                  //* sound
+                  //if( isMetronomeMute ){
+                    if( countinBeat < beatPerBar )
+                      playSound(sounds['metronome_click'], 0, 1.0);
+                    else
+                      playSound(sounds['metronome_ding'], 0, 1.0);
+                  //}
+                  /**/
+                }, beatTime*i);
+              }
+            }
+            else{
+              isPlayed = false;
+              playORpause.add( playButton.clone() ); 
+              
+              //isMetronomeOn = false;
+              beatMesh[0].material.color = colorMode[ "beatInit" ];
+              beatMesh[1].material.color = colorMode[ "beatInit" ];
+              currentBeat = -1;
+              playMetronome();
+            }
+            
+            scene.add( playORpause );
+          },200); 
+        }
+        //* double click
+        else{
+          //* stop & set loop
+          clearTimeout(tapped); //stop single tap callback
+          tapped=null;
+          console.log("double click in play button");
+          // icon
+          if( isPlayed ){
+            scene.remove( playORpause );
+            playORpause = new THREE.Object3D();
+            playORpause.position.copy( toolbarPosLC );
+            playORpause.add( playButton.clone() );
+            scene.add( playORpause );
+          }
+          // sheet
+          for(var i=0; i<sheetAmount; i++)
+            sheets[i].position.z = sheetBottom + i*sheetH;
+          for(var i=0; i<=takeAmount; i++)
+            noteSheet[i].position.z = playLine.position.z;
+          
+          //loopMesh.visible = true;
+          
+          isStart = false;
+          isPlayed = false;
+          //isMetronomeOn = false;
+          
+          if( scores.length > 0 ){
+            scores.sort( sortByTime );
+            currentScore = 0;
+            currentScoreEnd = scores.length;
+          }
+          for(var i=0; i<scores.length; i++)
+            console.log(i+": "+scores[i].instrument + ": "+scores[i].time)
+        }
+        break;
+      case "metronome":
+        isMetronomeMute = !isMetronomeMute;
+        if( isMetronomeMute ){
+          metronomeMesh.material.color = colorMode["iconOff"];
+          //playMetronome();
+        } 
+        else{
+          metronomeMesh.material.color = colorMode[ "iconOn" ];
+          beatMesh[0].material.color = colorMode[ "beatInit" ];
+          beatMesh[1].material.color = colorMode[ "beatInit" ];
+          currentBeat = -1;
+        }
+        break;
+      case "loop":
+        if( loopMesh.visible ){
+          isLoop = !isLoop;
+          if( isLoop ){
+            loopMesh.material.color = colorMode[ "iconOn" ];
+            //scores.sort( sortByTime );
+            //currentScore = 0;
+            //currentScoreEnd = scores.length;
+          }
+          else
+            loopMesh.material.color = colorMode[ "iconOff" ];
+          //* set scores' info
+          var curTime = context.currentTime;
+          scores.sort( sortByTime );
+          currentScoreEnd = scores.length;
+          /**/
+          for(var i=0; i<currentScoreEnd; i++){
+            if( (scores[i].time * beatTimeS) > curTime ){
+              currentScore = i;
+              break;
+            }
+          }
+          /**/
+          
+        }
+        break;
+      case "setting":
+        console.log("setting");
+        if( isPlayed ){
+          isStart = false;
+          isPlayed = false;
+            scene.remove( playORpause );
+            playORpause = new THREE.Object3D();
+            playORpause.position.copy( toolbarPosLC );
+            playORpause.add( playButton.clone() );
+            scene.add( playORpause );
+          startTime = context.currentTime;
+        }
+        //* here: maybe pop-up window...
+        window.open('simpleSetting_popup.html','Setting','top=0, left=0, width=350,height=700,menu=0,status=0');
+        break;
+      case "trash":
+        // graph
+        for( var i=0; i<noteSheet[currentTake].children.length; i++){
+          noteSheet[currentTake].children[i].visible = false;
+          //noteSheet[currentTake].children.shift();
+        }
+        noteSheet[currentTake].children.length = 0;
+        console.log(noteSheet[currentTake].children.length);
+        //scene.remove( noteSheet[currentTake] );
+        //noteSheet[currentTake] = THREE.Object3D();
+        //scene.add( noteSheet[currentTake] );
+        // score
+        var tmp = [];
+        for( var i=0; i<scores.length; i++)
+          tmp.push( scores[i] );
+        scores = [];
+        for( var i=0; i<tmp.length; i++)
+          if(tmp[i].take != currentTake)
+            scores.push(tmp[i]);
+        //if( currentScore != -1 ){
+          currentScore = 0;
+          currentScoreEnd = scores.length;
+          var currTime = context.currentTime - startTime;
+          for(var i=0; i<scores.length; i++ )
+            if( Math.abs( scores[i].time - currTime) < 1e-4 ){
+              currentScore = i;
+              break;
+            }
+        //}
+        break;
+      case "save":
+        //* scores
+        var scoresStr = JSON.stringify(scores);
+        localStorage.setItem("myScores", scoresStr);
+        console.log("save length: "+scores.length);
+        break;
+      case "load":
+        //* scores
+        // load
+          var scoresStr = localStorage.getItem("myScores");
+          var loadScores = [];
+          try{
+            loadScores = JSON.parse(scoresStr);
+            console.log("load length: "+loadScores.length);
+          }catch(e){
+            //throw a exception if parse null to json
+            console.log("can't load as json\n"+scoresStr);
+          }
+        // check Repeat
+        var check;
+          for(var i=0; i<loadScores.length; i++){
+            var s = new score();
+            s.setScore( loadScores[i].take, loadScores[i].time, loadScores[i].instrument, loadScores[i].intensity);
+            check = true;
+            for(var j=0; j<scores.length; j++){
+              if( s.isSame( scores[j]) ){
+                check = false;
+                break;
+              }
+            }
+            if( check ){
+              scores.push( s );
+              
+              addNoteMesh( s );
+            }
+          }
+          //* set scores' info
+          var curTime = context.currentTime;
+          scores.sort( sortByTime );
+          currentScoreEnd = scores.length;
+          /**/
+          for(var i=0; i<currentScoreEnd; i++){
+            if( (scores[i].time * beatTimeS) > curTime ){
+              currentScore = i;
+              break;
+            }
+          }
+          console.log("curr length: "+scores.length);
+        break;
+      case "3D":
+        console.log("3D mode");
+        scores.sort( sortByTime );
+        window.open('simple_3Dmode.html','Setting','top=0, left=0, width=700,height=700,menu=0,status=0');
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+function onDocumentMouseUp( event ){
+  event.preventDefault();
+  
+  if(presstimer !== null) {
+    clearTimeout(presstimer);
+  }
+  
+}
+
+function onWindowResize (){
+  /**/
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize (window.innerWidth, window.innerHeight);
+  /**./
+  var w = window.innerWidth/16;
+  var h = window.innerHeight/9;
+  var tmp;
+  if( w > h ) tmp = h;
+  else        tmp = w;
+  camera.aspect = 16/9;
+  camera.updateProjectionMatrix();
+  renderer.setSize( 16*tmp, 9*tmp);
+  /**/
+}
+
+function animate(){
+  /////
+  //var dt = context.currentTime - previousTime;
+  //previousTime = context.currentTime;
+  var dt = clock.getDelta();
+  /**/
+  
+  if( isStart ){
+    //* Rolling Sheet
+      
+      for(var i=0; i<sheets.length; i++){
+        if( isNaN(dt) )  break;
+        
+        // hit sheetTop
+        if(sheets[i].position.z<sheetTop){
+          
+          var tmpBottom;
+          if( i == 0 )  tmpBottom = sheets[sheets.length-1].position.z + sheetH; 
+          else          tmpBottom = sheets[i-1].position.z + sheetH;
+          sheets[i].position.z = tmpBottom;
+        }
+        sheets[i].position.z -= sheetH/(60/tempo)*dt;
+     }
+  }
+  if( isPlayed ){
+    //* Rolling NoteSheet
+    for(var i=0; i<=takeAmount; i++)
+      noteSheet[i].position.z -= sheetH/(60/tempo)*dt;
+    console.log("current: "+currentScore);
+    //* play scores
+    //if( currentScore != -1 ){
+      var currTime = context.currentTime - startTime;
+      /* loop */
+      if(isLoop &&  loopEnd < currTime ){
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!");
+        //console.log("loopEnd: "+loopEnd);
+        startTime = context.currentTime - loopStart;
+        scores.sort( sortByTime );
+        /**/
+        for(var i=0; i<scores.length; i++){
+          //console.log((scores[i].time * beatTimeS) + " / ");
+          if( (scores[i].time * beatTimeS) > loopStart ){
+            currentScore = i;
+            console.log("*******************************"+currentScore);
+
+            break;
+          }
+        }
+        /**/
+        //currentScore = 0;
+        currentScoreEnd = scores.length;
+        /**/
+        // sheet
+        for(var i=0; i<sheetAmount; i++){
+          sheets[i].position.z = sheetBottom + i*sheetH;
+          if(sheets[i].position.z<sheetTop){
+            
+            var tmpBottom;
+            if( i == 0 )  tmpBottom = sheets[sheets.length-1].position.z + sheetH; 
+            else          tmpBottom = sheets[i-1].position.z + sheetH;
+            sheets[i].position.z = tmpBottom;
+          }
+          sheets[i].position.z -= sheetH/(60/tempo)*loopStart;
+        }
+        for(var i=0; i<=takeAmount; i++){
+          noteSheet[i].position.z = playLine.position.z;
+          noteSheet[i].position.z -= sheetH/(60/tempo)*loopStart;
+        }
+        /**/
+      }
+      /* play scores*/
+      for( var i=currentScore; i<currentScoreEnd; i++){
+        //if( Math.abs( scores[i].time - currTime ) < dt ){
+        if( Math.abs( (scores[i].time * beatTimeS) - currTime ) < dt ){
+          //console.log("i: "+i);
+          if( instrumentButtonsIsOn[scores[i].take][scores[i].instrument] && isTakeOn[scores[i].take]){
+            scores[i].playScore();
+            currentScore ++;
+          } 
+        }
+        else{
+          currentScore = i;
+          break;
+        }
+      }
+    //}
+  }
+  /**/
+  
+  /////
+  //controls.update();
+  //console.log(camera.position.y);
+  requestAnimationFrame( animate );  
+  renderer.render( scene, camera );
+}
+
+function sortByTime(a,b){
+  var timeA = a.time;
+  var timeB = b.time;
+  if( timeA < timeB)  return -1;
+  if( timeA > timeB)  return 1;
+  if( timeA == timeB) return 0;
+}
+
+function playMetronome(){
+  if( !isMetronomeOn || !isPlayed )  return;
+  
+  currentBeat++;
+  if( currentBeat%2 == 0 ){
+    beatMesh[1].material.color = colorMode[ "beatCurrent" ];
+    beatMesh[0].material.color = colorMode[ "beatInit" ];
+  }
+  else{
+    beatMesh[1].material.color = colorMode[ "beatInit" ];
+    beatMesh[0].material.color = colorMode[ "beatCurrent" ];
+  }
+  
+  if( currentBeat%beatPerBar == 0 ){
+    var tmp = currentBeat%2;
+    if( tmp == 0 )  beatMesh[1].material.color = colorMode[ "beatOnBar" ];
+    else            beatMesh[0].material.color = colorMode[ "beatOnBar" ];
+  }
+  
+  if( !isMetronomeMute ){
+    if( isMetronomeDing && currentBeat%beatPerBar == 0 )
+      playSound(sounds['metronome_ding'], 0, 1.0);
+    else
+      playSound(sounds['metronome_click'], 0, 1.0);
+  }
+
+  setTimeout(function () {
+     playMetronome();
+  }, beatTime);
+  
+}
+
+function addNoteMesh(s){
+  // graph
+  var newNote = instrumentNotes[s.take][s.instrument].mesh.clone();
+  newNote.position.set(instrumentNotes[s.take][s.instrument].posx, -unitX/1.5, (sheetH * s.time));
+  notes.push( newNote );
+  noteSheet[s.take].add( newNote );
+}
+
+//* for Popup Window
+function addNewNote(insName){
+  //alert("!!!");
+  if( !isPlayed ){
+    isStart = true;
+    isPlayed = true;
+      scene.remove( playORpause );
+      playORpause = new THREE.Object3D();
+      playORpause.position.copy( toolbarPosLC );
+      playORpause.add( pauseButton.clone() );
+      scene.add( playORpause );
+    startTime = context.currentTime;
+  }
+  
+  //* add notes
+    //if( instrumentButtons[insName].isOn ){
+      //playSound(sounds[insName], 0, 1.0);
+      //if( isPlayed ){
+        // graph
+        var newNote = instrumentNotes[currentTake][insName].mesh.clone();
+        newNote.position.set(instrumentNotes[currentTake][insName].posx, -unitX/1.5, -noteSheet[currentTake].position.z+sheetBottom);
+        notes.push( newNote );
+        noteSheet.add( newNote );
+        // score
+        var s = new score();
+        var t = context.currentTime - startTime;
+        s.setScore(t, insName);
+        scores.push( s );
+      //}
+    //}
+}
+
+//* [pop-up] setting function
+function setMetornome( newBeats, newTempo ){
+  tempo = Number( newTempo );       // Number(): for firefox
+  beatTime = 60 / tempo * 1000;     // in ms
+  beatTimeS = 60 / tempo;           // is s
+  beatPerBar = Number( newBeats  );
+  
+  //console.log("0: "+tempo+" / "+beatTime+" / "+beatPerBar);
+  //* rollingSheet
+    // delete sheets
+    for( var i=0; i<sheetAmount; i++ ){
+      scene.remove( sheets[i] );
+    }
+    sheets = [];
+    console.log("1: "+sheets.length);
+    
+    // set sheetAmount
+    if( beatPerBar > 0 ){
+      var tmp = 0;
+      for(var i=0; i<10; i++){
+        tmp += beatPerBar;
+        console.log("tmp: "+tmp);
+        if( tmp >= 10 )
+          break;
+      }
+      sheetAmount = tmp;
+    }
+    else{
+      sheetAmount = 10;
+    }
+    //console.log("2: "+sheetAmount);
+    // create new sheets
+    for(var i=0; i<sheetAmount; i++){
+      var p = planeMesh.clone();
+      
+      sheets.push( new THREE.Object3D() );
+      sheets[i].add( p );
+      var sheetLine;
+      if( i%beatPerBar == 0 )   sheetLine = barLineMesh.clone();
+      else                      sheetLine = beatLineMesh.clone();
+      sheets[i].add( sheetLine );
+      sheets[i].position.z = sheetBottom + i*sheetH;
+      scene.add( sheets[i] );
+    }
+    for(var i=0; i<=takeAmount; i++)
+      noteSheet[i].position.z = playLine.position.z;
+    //console.log("3: "+sheets.length);
+    console.log("current scores: "+scores.length);
+}
+
+function setLooper( newStart, newEnd ){
+  loopStartBar = Number( newStart );
+  loopEndBar = Number( newEnd );
+  loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
+  loopEnd = loopEndBar * beatPerBar * beatTimeS;  
+}
+
+function setQuautize( note ){
+  scores.sort( sortByTime );
+  console.log("current note: "+note);
+  if( note != 0 ){
+    var s = [];
+    for(var i=0; i<scores.length; i++){
+      s.push( scores[i] );
+      notes[i].visible = false;
+      scene.remove( notes[i] );
+    }
+    scores = [];  
+    notes = [];
+    
+    switch( note ){
+      case  4:
+        //console.log(4);
+        for(var i=0; i<s.length; i++){
+          s[i].time = Math.round( s[i].time );
+          if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+            scores.push( s[i] );
+            addNoteMesh( s[i] );
+          }
+        }
+        console.log( "4new: " + scores.length );
+        break;
+      case  8:
+        //console.log(8);
+        for(var i=0; i<s.length; i++){
+          var tmp0 = Math.floor( s[i].time );
+          var tmp1 = Math.round( s[i].time*10 ) / 10;
+          if( tmp1 - tmp0 < 0.5)
+            s[i].time = tmp0;
+          else
+            s[i].time = tmp0 + 0.5;
+          if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+            scores.push( s[i] );
+            addNoteMesh( s[i] );
+          }
+          //notes[i].position.z = sheetH * scores[i].time;
+        }
+        break;
+      case 16:
+        //console.log(16);
+        for(var i=0; i<s.length; i++){
+          var tmp0 = Math.floor( s[i].time );
+          var tmp1 = Math.round( s[i].time*100 ) / 100;
+          var tmp = tmp1 - tmp0 ;
+          if( tmp < 0.25)
+            s[i].time = tmp0;
+          else if( tmp < 0.5 )
+            s[i].time = tmp0 + 0.25;
+          else if( tmp < 0.75 )
+            s[i].time = tmp0 + 0.5;
+          else
+            s[i].time = tmp0 + 0.75;
+          if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+            scores.push( s[i] );
+            addNoteMesh( s[i] );
+          }
+          //notes[i].position.z = sheetH * scores[i].time;
+          console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  currentScore = 0;
+  currentScoreEnd = scores.length;
+  /**/
+}
+</script>
+
+</body>
+</html>
