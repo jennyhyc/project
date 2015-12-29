@@ -13,7 +13,7 @@
     text-valign: center;
   }
   .but {
-		width: 18%;
+		width: 4em;
 		border-style:outset;
 	}
   .note {
@@ -41,10 +41,10 @@
         <li>end: <br/> 
             <input type="number" id = "loopEndBar" size="4" onchange="updateLoopEnd(this.value);"> </li>
   </ul>
-  <li>Quautize</li>
-  <ul>  <button type="button" class="but" onclick="javascript:quautize( 4);"><img class="note" src="http://jennyhyc.github.io/project/images/note/4.png"/></button>
-        <button type="button" class="but" onclick="javascript:quautize( 8);"><img class="note" src="http://jennyhyc.github.io/project/images/note/8.png"/></button>
-        <button type="button" class="but" onclick="javascript:quautize(16);"><img class="note" src="http://jennyhyc.github.io/project/images/note/16.png"/></button>
+  <li>Quantize</li>
+  <ul>  <button type="button" class="but" onclick="javascript:quantize( 4);"><img class="note" src="http://jennyhyc.github.io/project/images/note/4.png"/></button>
+        <button type="button" class="but" onclick="javascript:quantize( 8);"><img class="note" src="http://jennyhyc.github.io/project/images/note/8.png"/></button>
+        <button type="button" class="but" onclick="javascript:quantize(16);"><img class="note" src="http://jennyhyc.github.io/project/images/note/16.png"/></button>
   </ul>
 </ul>
   <div style="text-align:center">  
@@ -99,7 +99,7 @@ function saveSetting(){
   var loopEndBar = document.getElementById("loopEndBar").value;
   window.opener.setLooper( loopStartBar, loopEndBar );
   
-  window.opener.setQuautize( note );
+  window.opener.setQuantize( note );
 }
 
 function updateRangeBeats( value ){ document.getElementById("beats").value = value; }
@@ -143,7 +143,7 @@ function updateLoopStart( value ){
     document.getElementById("loopStartBar").value = loopEnd-1;
 }
 
-function quautize( value ){
+function quantize( value ){
   note = value;
 }
 </script>
