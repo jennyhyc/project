@@ -99,7 +99,7 @@ function saveSetting(){
   var loopEndBar = document.getElementById("loopEndBar").value;
   window.opener.setLooper( loopStartBar, loopEndBar );
   
-  //window.opener.setQuautize( note );
+  window.opener.setQuautize( note );
 }
 
 function updateRangeBeats( value ){ document.getElementById("beats").value = value; }
