@@ -21,8 +21,7 @@
 
 <h2></h2>
 <div id="insChange">
-<a href="#" onclick="javascript:window.open('simple3D_popup.html','popupwindow','top=100, left=100, width=350,height=350,menu=0,status=0');">3D Mode (Popup Window)</a>
-<a href="#" onclick="javascript: setMetornome( 5, 200 ) ;">test Metronome </a>
+
 </div>
 
 <script src="../js/three.js/r70/three.min.js"></script>
@@ -1139,7 +1138,11 @@ function setMetornome( newBeats, newTempo ){
     for(var i=0; i<=takeAmount; i++)
       noteSheet[i].position.z = playLine.position.z;
     //console.log("3: "+sheets.length);
+<<<<<<< HEAD
 
+=======
+    console.log("current scores: "+scores.length);
+>>>>>>> master
 }
 
 function setLooper( newStart, newEnd ){
@@ -1152,68 +1155,70 @@ function setLooper( newStart, newEnd ){
 
 function setQuautize( note ){
   scores.sort( sortByTime );
-  
-  var s = [];
-  for(var i=0; i<scores.length; i++){
-    s.push( scores[i] );
-    notes[i].visible = false;
-    scene.remove( notes[i] );
-  }
-  scores = [];  
-  notes = [];
-  
-  switch( note ){
-    case  4:
-      //console.log(4);
-      for(var i=0; i<s.length; i++){
-        s[i].time = Math.round( s[i].time );
-        if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
-          scores.push( s[i] );
-          addNoteMesh( s[i] );
+  console.log("current note: "+note);
+  if( note != 0 ){
+    var s = [];
+    for(var i=0; i<scores.length; i++){
+      s.push( scores[i] );
+      notes[i].visible = false;
+      scene.remove( notes[i] );
+    }
+    scores = [];  
+    notes = [];
+    
+    switch( note ){
+      case  4:
+        //console.log(4);
+        for(var i=0; i<s.length; i++){
+          s[i].time = Math.round( s[i].time );
+          if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+            scores.push( s[i] );
+            addNoteMesh( s[i] );
+          }
         }
-      }
-      console.log( "4new: " + scores.length );
-      break;
-    case  8:
-      //console.log(8);
-      for(var i=0; i<s.length; i++){
-        var tmp0 = Math.floor( s[i].time );
-        var tmp1 = Math.round( s[i].time*10 ) / 10;
-        if( tmp1 - tmp0 < 0.5)
-          s[i].time = tmp0;
-        else
-          s[i].time = tmp0 + 0.5;
-        if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
-          scores.push( s[i] );
-          addNoteMesh( s[i] );
+        console.log( "4new: " + scores.length );
+        break;
+      case  8:
+        //console.log(8);
+        for(var i=0; i<s.length; i++){
+          var tmp0 = Math.floor( s[i].time );
+          var tmp1 = Math.round( s[i].time*10 ) / 10;
+          if( tmp1 - tmp0 < 0.5)
+            s[i].time = tmp0;
+          else
+            s[i].time = tmp0 + 0.5;
+          if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+            scores.push( s[i] );
+            addNoteMesh( s[i] );
+          }
+          //notes[i].position.z = sheetH * scores[i].time;
         }
-        //notes[i].position.z = sheetH * scores[i].time;
-      }
-      break;
-    case 16:
-      //console.log(16);
-      for(var i=0; i<s.length; i++){
-        var tmp0 = Math.floor( s[i].time );
-        var tmp1 = Math.round( s[i].time*100 ) / 100;
-        var tmp = tmp1 - tmp0 ;
-        if( tmp < 0.25)
-          s[i].time = tmp0;
-        else if( tmp < 0.5 )
-          s[i].time = tmp0 + 0.25;
-        else if( tmp < 0.75 )
-          s[i].time = tmp0 + 0.5;
-        else
-          s[i].time = tmp0 + 0.75;
-        if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
-          scores.push( s[i] );
-          addNoteMesh( s[i] );
+        break;
+      case 16:
+        //console.log(16);
+        for(var i=0; i<s.length; i++){
+          var tmp0 = Math.floor( s[i].time );
+          var tmp1 = Math.round( s[i].time*100 ) / 100;
+          var tmp = tmp1 - tmp0 ;
+          if( tmp < 0.25)
+            s[i].time = tmp0;
+          else if( tmp < 0.5 )
+            s[i].time = tmp0 + 0.25;
+          else if( tmp < 0.75 )
+            s[i].time = tmp0 + 0.5;
+          else
+            s[i].time = tmp0 + 0.75;
+          if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
+            scores.push( s[i] );
+            addNoteMesh( s[i] );
+          }
+          //notes[i].position.z = sheetH * scores[i].time;
+          console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
         }
-        //notes[i].position.z = sheetH * scores[i].time;
-        console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
-      }
-      break;
-    default:
-      break;
+        break;
+      default:
+        break;
+    }
   }
   currentScore = 0;
   currentScoreEnd = scores.length;
