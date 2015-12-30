@@ -53,7 +53,7 @@ function score3D(){
 var tempo = window.opener.tempo;  // bpm
 var tmp = window.opener.scoresTo3D;  // score
 var scores = [];
-alert(tempo);
+//alert(tempo);
 
 var frameStart, frameEnd;
 var intensity = 0.5;
@@ -537,8 +537,10 @@ function standby(scoreNum){
     }
     switch(scoreNum){
         case 0:
+            console.log("myScore!!!");
             var startplay = setTimeout(playScore1, i * (60/tempo*1000), scores);
             timeOuts.push(startplay);
+            break;
         case 1:
             //var demo1 = normalLR(scoredemo);
             console.log(scoredemo);
