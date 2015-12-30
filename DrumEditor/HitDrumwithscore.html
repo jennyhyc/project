@@ -1,0 +1,700 @@
+<html>
+<head>
+<style>
+#info {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    color: #ffff00
+}
+#control {
+  position: absolute;
+  top: 0px;
+  padding: 10px;
+  text-align: center;
+  color: #00ff00
+}
+body {
+    overflow: hidden;
+}
+</style>
+</head>
+
+<body>
+<div id  = 'control'>
+        <button id = "play">Play </a>
+        <button id = "play1">PlayDemo1</a>
+        <button id = "play2">PlayDemo2</a><br>
+		<button id = "reset">Reset </a><br>
+	</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+<script src="https://dl.dropboxusercontent.com/u/3587259/Code/Threejs/OrbitControls.js"></script>
+<script src='https://jyunming-chen.github.io/WebAudio/js/shared.js'></script>
+<script src="https://pkin159.github.io/project/js/dat.gui.min.js"></script>
+<script src="https://pkin159.github.io/project/js/jquery-2.1.4.min.js"></script>
+<script src="https://pkin159.github.io/project/scoreNoLR.js"></script>
+<script src="https://pkin159.github.io/project/DrumKitGeometry-S.js"></script>
+<script src="https://pkin159.github.io/project/normallr.js"></script>
+<script src="https://pkin159.github.io/project/ScoreDemo.js"></script>
+<!--
+<script src="HitDrumwithscore.js"></script>
+-->
+<script>
+
+//* here
+function score3D(){
+  this.time;
+  this.intensity;
+  this.instrument;
+}
+var tempo = window.opener.tempo;  // bpm
+var tmp = window.opener.scoresTo3D;  // score
+var scores = [];
+alert(tempo);
+
+var frameStart, frameEnd;
+var intensity = 0.5;
+var instrument = "s";
+var bpm = 60;
+var sounds;
+//////////////////////////////
+/*
+if(yourscore[0].bpm !== undefined){
+    bpm = yourscore[0].bpm;
+    yourscore.pop();
+}*/
+//var scoreArray = normalLR(/*score!!!!!!!!!!*/);
+    //console.log(scoreArray);
+    normalLR(/*score*/);
+var demo1 = normalLR(scoredemo);
+var demo2 = normalLR(scoredemo2);
+//////////////////////////////
+var SoundSample = function(){
+        loadSounds(this, {
+        bass: 'https://jennyhyc.github.io/project/sounds/drum/bass.mp3',
+        snare: 'https://jennyhyc.github.io/project/sounds/drum/snare.mp3',
+        hatOp: 'https://jennyhyc.github.io/project/sounds/drum/hatOp.mp3',
+        hatCl: 'https://jennyhyc.github.io/project/sounds/drum/hatCl.mp3',
+        stick: 'https://jennyhyc.github.io/project/sounds/drum/stick.mp3',
+        crash: 'https://jennyhyc.github.io/project/sounds/drum/crash.mp3',
+        ride: 'https://jennyhyc.github.io/project/sounds/drum/ride.mp3',
+        tomFl: 'https://jennyhyc.github.io/project/sounds/drum/tomFl.mp3',
+        tomHh: 'https://jennyhyc.github.io/project/sounds/drum/tomHh.mp3',
+        tomLw: 'https://jennyhyc.github.io/project/sounds/drum/tomLw.mp3'
+    });
+}
+var Stick = function () {
+    // properties
+    this.T = 4; // in seconds
+    this.keys = [{   /////////will be change
+        timeS: 0,
+        value: 0
+    }, {
+        timeS: 0.2,
+        value: 0.2//3.14 / 4
+    }, {
+        timeS: 0.4,
+        value: -.2
+    },{
+        timeS: 0.8,
+        value: 0
+    },
+       {
+        timeS: 1,
+        value: 0
+    }
+                ];
+    this.frame1 = new THREE.Object3D();  // starting & ending frames
+    this.frame2 = new THREE.Object3D();  // of startOneCycle
+                                         // default frame1 = frame2 = frameChair.clone();
+    
+    this.startTime = 0;
+    this.angle = 0; // for 'text-based' rendering
+    this.color = new THREE.Color(1,0,0);
+    this.group = newMesh();
+    this.object = new THREE.Object3D();
+    this.object.add(this.group);
+    // methods
+    this.setT = function (period) {
+        this.T = period;
+    }
+    this.setMaxKeysValue = function (intensity){
+        this.keys[1].value = intensity;
+    }
+    this.interpolate = function (s) { // normalized time
+        if (s > 1) // end of cycle
+        return this.keys[this.keys.length - 1].value;
+        for (var i = 1; i < this.keys.length; i++) {
+            if (s < this.keys[i].timeS) break;
+        }
+        var vv = this.keys[i - 1].value + (s - this.keys[i - 1].timeS) / (this.keys[i].timeS - this.keys[i - 1].timeS) * (this.keys[i].value - this.keys[i - 1].value);
+        return vv;
+    };
+    this.update = function (time) { // time: elapsedTime
+        var s = (time - this.startTime) / this.T;
+       
+        this.tt = (this.tt + 0.01) || 0;
+        
+        this.angle = this.interpolate(s);
+        this.group.rotation.x = this.angle;
+        
+        var quat = new THREE.Quaternion();
+        if(this.tt > 1){     
+            this.tt = 1;
+        
+            THREE.Quaternion.slerp(this.frame1.quaternion, this.frame2.quaternion, quat , this.tt);
+        
+        this.object.quaternion.copy (quat);
+        } 
+        
+        var pos = this.frame1.position.lerp(this.frame2.position, s);
+        this.object.position.set(pos.x, pos.y, pos.z);
+    }
+    this.startOneCycle = function () {
+        this.startTime = clock.getElapsedTime();
+    }
+   
+}
+var BassStep = function () {
+    // properties
+    this.T = 4; // in seconds
+    this.stepkeys = [{   /////////will be change
+        timeS: 0,
+        value: -0.52
+    },{
+        timeS: 0.5,
+        value: 0//3.14 / 4
+    },{
+        timeS: 1,
+        value: -0.52
+    }
+                ];
+    this.headkeys = [{   /////////will be change
+        timeS: 0,
+        value: -0.52
+    },{
+        timeS: 0.5,
+        value: 0.5//3.14 / 4
+    },{
+        timeS: 1,
+        value: -0.52
+    }
+                ];
+    this.startTime = 0;
+    this.angleS = 0;
+    this.angleH = 0; // for 'text-based' rendering
+    this.soundintensity = 1;
+    this.group = BassStepMesh();
+    // methods
+    this.setT = function (period) {
+        this.T = period;
+    }
+    this.setSoundIntensity = function(intensity){
+        this.soundintensity = intensity;
+    }
+    this.interpolate = function (s, keys) { // normalized time
+        var tempkeys = keys;
+        if (s > 1) // end of cycle
+        return tempkeys[tempkeys.length - 1].value;
+        for (var i = 1; i < tempkeys.length; i++) {
+            if (s < tempkeys[i].timeS) break;
+        }
+        var vv = tempkeys[i - 1].value + (s - tempkeys[i - 1].timeS) / (tempkeys[i].timeS - tempkeys[i - 1].timeS) * (tempkeys[i].value - tempkeys[i - 1].value);
+        return vv;
+    };
+    this.update = function (time) { // time: elapsedTime
+        var s = (time - this.startTime) / this.T;
+        this.angleS = this.interpolate(s, this.stepkeys);
+        this.angleH = this.interpolate(s, this.headkeys);
+        this.group[1].rotation.x = this.angleS;
+        this.group[2].rotation.x = this.angleH;
+    }
+    this.startOneCycle = function () {
+        this.startTime = clock.getElapsedTime();
+    }
+   
+}
+var camera, scene, renderer, frame, frame1, frame2, controls;
+var lightarray = [];
+var timeOuts = [];
+////////init
+var clock = new THREE.Clock();
+///////geometry
+var stick1 = new Stick();
+var stick2 = new Stick();
+var step = new BassStep();
+///////animate
+//////play & stop
+var play, CheckF, Check;
+var count = 0;
+var soundsample = new SoundSample();
+var poschair = new THREE.Vector3(0, 10, 0);
+var posbass = new THREE.Vector3(15,65,-185);
+var poshihat = new THREE.Vector3( -130, 120, -100);
+var possnare = new THREE.Vector3( -75,110, -90);
+var postomL = new THREE.Vector3(5, 160, -195);
+var postomR = new THREE.Vector3(25, 160, -195);
+var poscrash = new THREE.Vector3(-100, 120, -180);
+var posride = new THREE.Vector3(130, 120, -170);
+var posfloortom = new THREE.Vector3(100,82,-100);
+var chair = new Chair();
+var bass = new Bass();
+var hihat = new Hihat();
+var hihattop = hihat.children[2].position;
+var hihatbutton = hihat.children[4].position;
+var snare = new Snare();
+var tomLw = new Tom(new THREE.Euler(Math.PI/8, Math.PI/4, 0, 'XYZ'));
+var tomHh = new Tom(new THREE.Euler(Math.PI/8, Math.PI*3/4, 0, 'XYZ'));
+var crash = new Crash();
+var ride = new Ride();
+var floortom = new FloorTom();
+var lighttarget = [snare, bass, tomHh];
+var chairframeR, hihatframeR, snareframeR, tomLwframeR, tomHhframeR, tomFlframeR, crashframeR, rideframeR;
+var chairframeL, hihatframeL, snareframeL, tomLwframeL, tomHhframeL, tomFlframeL, crashframeL, rideframeL;
+function setFrame(){
+    chairframeR = new THREE.Object3D();
+    chairframeR.position.set ( poschair.x+15, poschair.y+110, poschair.z );
+    chairframeR.quaternion.setFromAxisAngle(new THREE.Vector3(0, -1, 0), 0);
+    snareframeR = new THREE.Object3D();
+    snareframeR.position.set (30, 140, -50) ;
+    snareframeR.quaternion.setFromEuler(new THREE.Euler(0, Math.PI/3, 0, 'YZX'));
+    standbyframeR = new THREE.Object3D();
+    standbyframeR.position.set ( poschair.x+30, poschair.y+170, poschair.z-10);
+    standbyframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/12, Math.PI/4, 0, 'YZX'));
+    hihatframeR = new THREE.Object3D();
+    hihatframeR.position.set ( -35, 170, -65);
+    hihatframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/3, 0, 'YZX'));
+    tomLwframeR = new THREE.Object3D();
+    tomLwframeR.position.set ( 0, 180, -80);
+    tomLwframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/14, 0, 'YZX'));
+    tomHhframeR = new THREE.Object3D();
+    tomHhframeR.position.set ( 90, 180, -80);
+    tomHhframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/14, 0, 'YZX'));
+    tomFlframeR = new THREE.Object3D();
+    tomFlframeR.position.set ( 30, 135, -45);
+    tomFlframeR.quaternion.setFromEuler(new THREE.Euler( 0, -Math.PI/3, 0, 'YZX'));
+    crashframeR = new THREE.Object3D();
+    crashframeR.position.set ( -50, 215, -70);
+    crashframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, Math.PI/8, 0, 'YZX'));
+    rideframeR = new THREE.Object3D();
+    rideframeR.position.set ( 110, 215, -40);
+    rideframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, -Math.PI/12, 0, 'YZX'));
+    chairframeL = new THREE.Object3D();
+    chairframeL.position.set ( poschair.x-15, poschair.y+110, poschair.z);
+    chairframeL.quaternion.setFromAxisAngle(new THREE.Vector3(0, -1, 0), 0);
+    snareframeL = new THREE.Object3D();
+    snareframeL.position.set (-30, 140, 0); 
+    snareframeL.quaternion.setFromEuler(new THREE.Euler(0, Math.PI/6, 0, 'YZX'));
+    standbyframeL = new THREE.Object3D();
+    standbyframeL.position.set ( poschair.x-30, poschair.y+155, poschair.z-10);
+    standbyframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/12, -Math.PI/4, 0, 'YZX'));
+    hihatframeL = new THREE.Object3D();
+    hihatframeL.position.set ( -145, 175, -5);
+    hihatframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
+    tomLwframeL = new THREE.Object3D();
+    tomLwframeL.position.set ( -60, 180, -80);
+    tomLwframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
+    tomHhframeL = new THREE.Object3D();
+    tomHhframeL.position.set ( 30, 180, -80);
+    tomHhframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
+    tomFlframeL = new THREE.Object3D();
+    tomFlframeL.position.set ( 20, 135, -75);
+    tomFlframeL.quaternion.setFromEuler(new THREE.Euler(0, -Math.PI/3, 0, 'YZX'));
+    crashframeL = new THREE.Object3D();
+    crashframeL.position.set ( -125, 220, -70);
+    crashframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, -Math.PI/14, 0, 'YZX'));
+    rideframeL = new THREE.Object3D();
+    rideframeL.position.set ( 40, 215, -70);
+    rideframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, -Math.PI/4, 0, 'YZX'));    
+}
+init();
+animate();
+function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 5000);
+    camera.position.set(200, 200, 500);
+    scene.add(camera);
+    var geometry = new THREE.BoxGeometry(40, 20, 20);
+    var material = new THREE.MeshLambertMaterial({
+        color: 0x1234ff
+    });
+    var mesh = new THREE.Mesh(geometry, material);
+    var mesh0 = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+        color:0xffff12,
+        opacity: 0.53,
+        transparent: true
+    }));
+    
+    snare.position.set(possnare.x, possnare.y, possnare.z);
+    bass.position.set(posbass.x, posbass.y, posbass.z);
+    hihat.position.set(poshihat.x, poshihat.y, poshihat.z);
+    tomLw.position.set(postomL.x, postomL.y, postomL.z);
+    tomHh.position.set(postomR.x, postomR.y, postomR.z);
+    crash.position.set(poscrash.x, poscrash.y, poscrash.z);
+    ride.position.set(posride.x, posride.y, posride.z);
+    floortom.position.set(posfloortom.x, posfloortom.y, posfloortom.z);  
+    scene.add(snare);
+    scene.add(bass);
+    scene.add(hihat);
+    scene.add(tomLw);
+    scene.add(tomHh);
+    scene.add(crash);
+    scene.add(floortom);
+    scene.add(ride);
+    setFrame();
+    frame = new THREE.Object3D();
+    scene.add(frame);
+    /*var axisHelper = new THREE.AxisHelper(55);
+    frame.add(axisHelper);*/
+    stick1.frame1 = chairframeR.clone();
+    stick1.frame2 = chairframeR.clone();
+    stick1.setT(0.5);
+    stick1.startOneCycle();
+    frame.add(stick1.object);
+  /*  var axisHelperR = new THREE.AxisHelper(55);
+    stick1.object.add(axisHelperR);
+    var gridHelperR = new THREE.GridHelper( 50, 5);
+    stick1.object.add( gridHelperR );*/
+    stick2.frame1 = chairframeL.clone();
+    stick2.frame2 = chairframeL.clone();
+    stick2.setT(0.5);
+    stick2.startOneCycle();
+    frame.add(stick2.object);
+   /* var axisHelperL = new THREE.AxisHelper(55);
+    stick2.object.add(axisHelperL);
+    var gridHelperL = new THREE.GridHelper( 50, 5);
+    stick2.object.add( gridHelperL );*/
+    var gridHelper = new THREE.GridHelper( 700, 50);
+    gridHelper.position.set(0,-1,0);
+    gridHelper.setColors(0x000000,0x000000);
+    scene.add( gridHelper );
+    step.setT(0.5);
+    step.startOneCycle();
+    step.group[0].position.set(15,0,-90);
+    step.group[0].rotation.y = Math.PI;
+    scene.add(step.group[0]);
+    
+    for(var i = 0 ; i < 3; i++){
+        light = new THREE.SpotLight(0xffffff, 1);
+        light.exponent = 20;
+        light.castShadow = true;
+        light.shadowCameraNear = 200;
+        light.shadowCameraFar = camera.far;
+        light.shadowCameraFov = 50;
+        light.shadowBias = -0.00022;
+        light.shadowDarkness = 0.5;
+        light.shadowMapWidth = 2048;
+        light.shadowMapHeight = 2048;
+        lightarray.push(light);
+    }
+    
+    for(var i = 0; i < lightarray.length; i++){
+        //if(i > 2)
+            //lightarray[i].position.set(-400+i%2*800, 500, -400+(i+1)%2*800);
+        //else
+            //lightarray[i].position.set(-400+i%2*800, 500, -400+(i)%2*800);
+            lightarray[i].position.set(-400+i%2*400, 500, 400);
+        scene.add(lightarray[i]);
+        //light.angle =  Math.PI / 12;
+        //lightarray[i].target = lighttarget[i];
+    }
+    lightarray[0].target = snare;
+    lightarray[1].target = bass;
+    var floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800, 30, 30),
+    new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('floor.jpg')}));
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+    floor.castShadow = true; floor.receiveShadow = true;
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x888888);
+    renderer.shadowMapEnabled = true;
+    //renderer.shadowMapSoft = true;
+    renderer.shadowMapType = THREE.PCFShadowMap;
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    document.body.appendChild(renderer.domElement);
+    window.addEventListener('resize', onWindowResize, false);
+}
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+///////////////
+function animate() {
+    
+    if(soundsample.snare !== undefined){
+    stick1.update(clock.getElapsedTime());
+    stick2.update(clock.getElapsedTime());
+    step.update(clock.getElapsedTime());
+    }
+    controls.update();
+    requestAnimationFrame(animate);
+    render();
+}
+var setTimeoutControl = 1;
+var check = 1;
+
+$('#play').click(function(){
+    //* here: get scores
+    
+    
+    for(var i=0; i<tmp.length; i++){
+    var curScore = new score3D();
+    curScore.time = tmp[i].time * 2;   // note4 -> note8
+    curScore.intensity = tmp[i].intensity;
+    //curScore.instrument = tmp.instrument;
+    //* drumName = ["hatCl", "hatOp", "snare", "tomHh", "bass", "tomLw", "tomFl", "crash", "ride"];
+    // change instruments' name 
+    switch( tmp[i].instrument ){
+      case "hatCl":
+        curScore.instrument = "hatCl";
+        break;
+      case "hatOp":
+        curScore.instrument = "hatOp";
+        break;
+      case "snare":
+        curScore.instrument = "s";
+        break;
+      case "tomHh":
+        curScore.instrument = "tomHh";
+        break;
+      case "bass":
+        curScore.instrument = "b";
+        break;
+      case "tomLw":
+        curScore.instrument = "tomLw";
+        break;
+      case "tomFl":
+        curScore.instrument = "tomFl";
+        break;
+      case "crash":
+        curScore.instrument = "crash";
+        break;
+      case "ride":
+        curScore.instrument = "ride";
+        break;
+    }
+    scores.push( curScore );
+  }
+
+    if(check){
+        setTimeoutControl = 1;
+        stick1.setT(60/tempo);
+        stick2.setT(60/tempo);
+        standby(0);
+        check = 0;
+    }
+    //HitOnce();
+});
+$('#play1').click(function(){
+    
+    if(check){
+        setTimeoutControl = 1;
+        bpm = 120;
+        stick1.setT(60/bpm);
+        stick2.setT(60/bpm);
+        standby(1);
+        check = 0;
+    }
+    //HitOnce();
+});
+$('#play2').click(function(){
+    
+    if(check){
+        setTimeoutControl = 1;
+        bpm = 150;
+        stick1.setT(60/bpm);
+        stick2.setT(60/bpm);
+        standby(2);
+        check = 0;
+    }
+});
+$('#reset').click(function(){
+    
+    setTimeoutControl = 0;
+    check = 1;
+    Stoptimeout();
+});
+var checkstip = 1;
+function stop(){
+	checkstop ^= 1;
+    Stoptimeout();
+}
+function standby(scoreNum){
+    var num = scoreNum || 0;
+	console.log('standby true');
+	stick1.frame1 = standbyframeR.clone();
+    stick2.frame1 = standbyframeL.clone();
+	stick1.frame2 = standbyframeR.clone();
+    stick2.frame2 = standbyframeL.clone();
+	for (var i = 0; i < 4; i++) {
+        var motion = setTimeout(HitOnce, i *(60/bpm*1000), 0.5, 'Right','st',i);
+        timeOuts.push(motion);
+    }
+    switch(scoreNum){
+        case 0:
+            var startplay = setTimeout(playScore1, i * (60/tempo*1000), scores);
+            timeOuts.push(startplay);
+        case 1:
+            //var demo1 = normalLR(scoredemo);
+            console.log(scoredemo);
+            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo1);
+            timeOuts.push(startplay);
+            break;
+        case 2:
+            //var demo2 = normalLR(scoredemo2);
+            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo2);
+            timeOuts.push(startplay);
+            break;
+    }
+    
+    
+}
+function playSound(buffer,time,intensity){
+    var gainNode = context.createGain();
+    var source = context.createBufferSource();
+    source.buffer = buffer;
+    console.log('source',source.buffer);
+    // Connect source to a gain node
+    source.connect(gainNode);
+    // Connect gain node to destination
+    gainNode.connect(context.destination);
+    var gainval = intensity || 0.5;
+    gainNode.gain.value = gainval;
+    source[source.start ? 'start' : 'noteOn'](time);
+}
+function HitOnce(intensity, LR, instrument, time) {
+    var ii = intensity || (3.14/4);
+    var lr = LR || 'Right';
+    var ins = instrument || 'b';
+   
+    console.log('stick1',stick1);
+    console.log('stick2',stick1);
+    if(ins !=='b'){
+        if(lr === 'Right' ){
+                
+                if(ins ==='s')
+                    stick1.frame2 = snareframeR.clone();
+                if(ins ==='hatOp'){
+                    stick1.frame2 = hihatframeR.clone();
+                    hihat.children[4].position.set(hihatbutton.x, hihatbutton.y, hihatbutton.z);
+                }
+                if(ins ==='hatCl'){
+                    stick1.frame2 = hihatframeR.clone();
+                    hihat.children[4].position.set(hihattop.x, hihattop.y, hihattop.z);
+                }
+                if(ins ==='tomLw')
+                    stick1.frame2 = tomLwframeR.clone();
+                if(ins ==='tomHh')
+                    stick1.frame2 = tomHhframeR.clone();
+                if(ins ==='tomFl')
+                    stick1.frame2 = tomFlframeR.clone();
+                if(ins ==='crash')
+                    stick1.frame2 = crashframeR.clone();
+                if(ins ==='ride')
+                    stick1.frame2 = rideframeR.clone();
+                var sound = setTimeout(Sound,  (stick1.keys[2].timeS*stick1.T) * 1000, ins, ii);
+                stick1.setMaxKeysValue(ii);
+                stick1.startOneCycle();
+                
+            }
+            
+        if(lr === 'Left' ){
+            
+                if(ins ==='s')
+                    stick2.frame2 = snareframeL.clone();
+                if(ins ==='hatOp'){
+                    stick2.frame2 = hihatframeL.clone();
+                    hihat.children[4].position.set(hihatbutton.x, hihatbutton.y, hihatbutton.z);
+                }
+                if(ins ==='hatCl'){
+                    stick2.frame2 = hihatframeL.clone();
+                    hihat.children[4].position.set(hihattop.x, hihattop.y, hihattop.z);
+                }
+                if(ins ==='tomLw')
+                    stick2.frame2 = tomLwframeL.clone();
+                if(ins ==='tomHh')
+                    stick2.frame2 = tomHhframeL.clone();
+                if(ins ==='tomFl')
+                    stick2.frame2 = tomFlframeL.clone();
+                if(ins ==='crash')
+                    stick2.frame2 = crashframeL.clone();
+                if(ins ==='ride')
+                    stick2.frame2 = rideframeL.clone();
+                stick2.setMaxKeysValue(ii);
+                stick2.startOneCycle();
+                var sound = setTimeout(Sound,  (stick2.keys[2].timeS*stick2.T) * 1000, ins, ii);
+        }
+    }else if(ins === 'b' ){
+        
+            step.setSoundIntensity(ii)
+            step.startOneCycle();
+            var sound = setTimeout(Sound,  (step.headkeys[2].timeS*step.T) * 1000, ins, ii);
+            timeOuts.push(sound);
+    }
+}
+function Sound(instrument, intensity){
+    var ins = instrument || 's';
+    var ii = intensity ||(3.14/4);
+    switch (ins){
+    case 's':
+        playSound(soundsample.snare, 0, ii);
+        break;
+    case 'st':
+        playSound(soundsample.stick,  0, ii);
+        break;
+    case 'b':
+        console.log(true);
+        playSound(soundsample.bass,  0, ii);
+        break;
+    case 'hatOp':
+        playSound(soundsample.hatOp,  0, ii);
+        break;
+    case 'hatCl':
+        playSound(soundsample.hatCl,  0, ii);
+        break;
+    case 'crash':
+        playSound(soundsample.crash,  0, ii);
+        break;
+    case 'ride':
+        playSound(soundsample.ride,  0, ii);
+        break;
+    case 'tomFl':
+        playSound(soundsample.tomFl,  0, ii);
+        break;
+    case 'tomHh':
+        playSound(soundsample.tomHh,  0, ii);
+        break;
+    case 'tomLw':
+        playSound(soundsample.tomLw,  0, ii);
+        break;
+    }
+}
+function playScore1(score) {
+    var sco = score || [];
+    for (var i = 0; i < sco.length; i++) {
+        var timeout = setTimeout(HitOnce, sco[i].time *(60/bpm*1000)/2, sco[i].intensity, sco[i].LR, sco[i].instrument, sco[i].time);
+        //var sound = setTimeout(Sound,  (sco[i].time) *(60/bpm*1000)/2, sco[i].instrument, sco[i].intensity);
+        timeOuts.push(timeout);
+        //timeOuts.push(sound);
+    }
+    var nextround = setTimeout(playScore1, (sco[sco.length-1].time+1) *(60/bpm*1000)/2, sco);
+    timeOuts.push(nextround);
+}
+function Stoptimeout(){
+    for(var i = 0; i < timeOuts.length; i++)
+        clearTimeout(timeOuts[i]);
+}
+function render() {
+    renderer.render(scene, camera);
+}
+
+
+
+</script>
+</body>
+</html>
