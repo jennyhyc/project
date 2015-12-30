@@ -1,6 +1,6 @@
 # project
 <h4>Drum Editor</h4>
-- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var4.html">Simple Var 4</a>
+- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var4.html">Simple Var 4</a> (<a href="http://jennyhyc.github.io/project/DrumEditor/simple_var4.0.html">Simple Var 4.0</a>)
   - test 3D mode
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var3.html">Simple Var 3</a>
   - setting plane
