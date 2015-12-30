@@ -100,6 +100,8 @@ function saveSetting(){
   window.opener.setLooper( loopStartBar, loopEndBar );
   
   window.opener.setQuantize( note );
+  
+  window.close();
 }
 
 function updateRangeBeats( value ){ document.getElementById("beats").value = value; }
