@@ -1248,7 +1248,7 @@ function setQuantize( note ){
           s[i].time = Math.round( s[i].time );
           if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
             scores.push( s[i] );
-            addNoteMesh( s[i] );
+            addNoteMesh( scores[scores.length-1] );
           }
         }
         console.log( "4new: " + scores.length );
@@ -1264,10 +1264,11 @@ function setQuantize( note ){
             s[i].time = tmp0 + 0.5;
           if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
             scores.push( s[i] );
-            addNoteMesh( s[i] );
+            addNoteMesh( scores[scores.length-1] );
           }
           //notes[i].position.z = sheetH * scores[i].time;
         }
+        console.log( "8new: " + scores.length );
         break;
       case 16:
         //console.log(16);
@@ -1285,11 +1286,12 @@ function setQuantize( note ){
             s[i].time = tmp0 + 0.75;
           if( i==0 || !s[i].isSame( scores[scores.length-1] ) ){
             scores.push( s[i] );
-            addNoteMesh( s[i] );
+            addNoteMesh( scores[scores.length-1] );
           }
           //notes[i].position.z = sheetH * scores[i].time;
           console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
         }
+        console.log( "16new: " + scores.length );
         break;
       default:
         break;
