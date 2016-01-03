@@ -607,7 +607,8 @@ function onDocumentMouseDown( event , mode ) {
   var inTake = raycaster.intersectObjects( takes );
   if( inTake.length > 0 ){
     var takeName = inTake[0].object.name;
-    //* long click: (un)show this take
+    //* long tap: (un)show this take
+    /**./
       presstimer = setTimeout(function() {
         //* here
         isTakeOn[takeName] = !isTakeOn[takeName];
@@ -620,6 +621,7 @@ function onDocumentMouseDown( event , mode ) {
           noteSheet[takeName].visible = false;
         }
       },1000);
+    /**/
     //console.log(takeName);
     currentTake = takeName;
     currentTakeIcon.position.copy( takes[currentTake].position );
@@ -641,7 +643,7 @@ function onDocumentMouseDown( event , mode ) {
   var inInstrument = raycaster.intersectObjects( instruments );
   if( inInstrument.length > 0 ){
     var insName = inInstrument[0].object.name;
-    /**./
+    
     //* long click: on/off 
       presstimer = setTimeout(function() {
         //console.log("long click !!!");
@@ -659,7 +661,7 @@ function onDocumentMouseDown( event , mode ) {
           instrumentNotes[currentTake][insName].mesh.material.color = colorTakes[currentTake].note;
         }
       },1000);
-    /**/
+      
     //* add notes
     if( instrumentButtonsIsOn[currentTake][insName] ){
       playSound(sounds[insName], 0, 1.0);
