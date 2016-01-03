@@ -24,15 +24,11 @@ body {
 
 <body>
 <div id  = 'control'>
-        <button id = "play">Play</button>
-        <button id = "play1">PlayDemo1</button>
-        <button id = "play2">PlayDemo2</button>
-        <button id = "play3">PlayDemo3</button>
-        <button id = "play4">Test</button>
-        <button id = "play5">Test2</button>
-        <button id = "reset">Reset </button><br>
-
-    </div>
+        <button id = "play">Play </a>
+        <button id = "play1">PlayDemo1</a>
+        <button id = "play2">PlayDemo2</a><br>
+		<button id = "reset">Reset </a><br>
+	</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
 <script src="https://dl.dropboxusercontent.com/u/3587259/Code/Threejs/OrbitControls.js"></script>
@@ -64,50 +60,17 @@ var intensity = 0.5;
 var instrument = "s";
 var bpm = 60;
 var sounds;
-//////////////////////////////    
-for(var i=0; i<tmp.length; i++){
-    var tempscore = {time:0, intensity: 0, instrument: 'null', LR: 'null'};
-    tempscore.time = tmp[i].time*2;   // note4 -> note8
-    tempscore.intensity = tmp[i].intensity;
-
-    switch( tmp[i].instrument ){
-      case "hatCl":
-        tempscore.instrument = "hatCl";
-        break;
-      case "hatOp":
-        tempscore.instrument = "hatOp";
-        break;
-      case "snare":
-        tempscore.instrument = "s";
-        break;
-      case "tomHh":
-        tempscore.instrument = "tomHh";
-        break;
-      case "bass":
-        tempscore.instrument = "b";
-        break;
-      case "tomLw":
-        tempscore.instrument = "tomLw";
-        break;
-      case "tomFl":
-        tempscore.instrument = "tomFl";
-        break;
-      case "crash":
-        tempscore.instrument = "crash";
-        break;
-      case "ride":
-        tempscore.instrument = "ride";
-        break;
-    }
-scores.push( tempscore );
-}
-var demo = normalLR(scores);
-
+//////////////////////////////
+/*
+if(yourscore[0].bpm !== undefined){
+    bpm = yourscore[0].bpm;
+    yourscore.pop();
+}*/
+//var scoreArray = normalLR(/*score!!!!!!!!!!*/);
+    //console.log(scoreArray);
+    normalLR(/*score*/);
 var demo1 = normalLR(scoredemo);
 var demo2 = normalLR(scoredemo2);
-var demo3 = scoredemo3;
-var demo4 = normalLR(scoredemo4);
-var demo5 = normalLR(scoredemo5);
 //////////////////////////////
 var SoundSample = function(){
         loadSounds(this, {
@@ -477,9 +440,47 @@ var check = 1;
 
 $('#play').click(function(){
     //* here: get scores
+    
+    
+    for(var i=0; i<tmp.length; i++){
+    var curScore = new score3D();
+    curScore.time = tmp[i].time * 2;   // note4 -> note8
+    curScore.intensity = tmp[i].intensity;
+    //curScore.instrument = tmp.instrument;
+    //* drumName = ["hatCl", "hatOp", "snare", "tomHh", "bass", "tomLw", "tomFl", "crash", "ride"];
+    // change instruments' name 
+    switch( tmp[i].instrument ){
+      case "hatCl":
+        curScore.instrument = "hatCl";
+        break;
+      case "hatOp":
+        curScore.instrument = "hatOp";
+        break;
+      case "snare":
+        curScore.instrument = "s";
+        break;
+      case "tomHh":
+        curScore.instrument = "tomHh";
+        break;
+      case "bass":
+        curScore.instrument = "b";
+        break;
+      case "tomLw":
+        curScore.instrument = "tomLw";
+        break;
+      case "tomFl":
+        curScore.instrument = "tomFl";
+        break;
+      case "crash":
+        curScore.instrument = "crash";
+        break;
+      case "ride":
+        curScore.instrument = "ride";
+        break;
+    }
+    scores.push( curScore );
+  }
 
-
-        
     if(check){
         setTimeoutControl = 1;
         stick1.setT(60/tempo);
@@ -512,69 +513,32 @@ $('#play2').click(function(){
         check = 0;
     }
 });
-$('#play3').click(function(){
-    
-    if(check){
-        setTimeoutControl = 1;
-        bpm = 90;
-        stick1.setT(60/bpm);
-        stick2.setT(60/bpm);
-        standby(3);
-        check = 0;
-    }
-});
-$('#play4').click(function(){
-    
-    if(check){
-        setTimeoutControl = 1;
-        bpm = 60;
-        stick1.setT(60/bpm);
-        stick2.setT(60/bpm);
-        standby(4);
-        check = 0;
-    }
-});
-$('#play5').click(function(){
-    
-    if(check){
-        setTimeoutControl = 1;
-        bpm = 120;
-        stick1.setT(60/bpm);
-        stick2.setT(60/bpm);
-        standby(5);
-        check = 0;
-    }
-});
 $('#reset').click(function(){
     
     setTimeoutControl = 0;
     check = 1;
     Stoptimeout();
-    stick1.frame1 = chairframeR.clone();
-    stick2.frame1 = chairframeL.clone();
-    stick1.frame2 = chairframeR.clone();
-    stick2.frame2 = chairframeL.clone();
 });
 var checkstip = 1;
 function stop(){
-    checkstop ^= 1;
+	checkstop ^= 1;
     Stoptimeout();
 }
 function standby(scoreNum){
     var num = scoreNum || 0;
-    console.log('standby true');
-    stick1.frame1 = standbyframeR.clone();
+	console.log('standby true');
+	stick1.frame1 = standbyframeR.clone();
     stick2.frame1 = standbyframeL.clone();
-    stick1.frame2 = standbyframeR.clone();
+	stick1.frame2 = standbyframeR.clone();
     stick2.frame2 = standbyframeL.clone();
-    for (var i = 0; i < 4; i++) {
+	for (var i = 0; i < 4; i++) {
         var motion = setTimeout(HitOnce, i *(60/bpm*1000), 0.5, 'Right','st',i);
         timeOuts.push(motion);
     }
     switch(scoreNum){
         case 0:
-            console.log(scores);
-            var startplay = setTimeout(playScore1, i * (60/tempo*1000), demo);
+            console.log("myScore!!!");
+            var startplay = setTimeout(playScore1, i * (60/tempo*1000), scores);
             timeOuts.push(startplay);
             break;
         case 1:
@@ -586,21 +550,6 @@ function standby(scoreNum){
         case 2:
             //var demo2 = normalLR(scoredemo2);
             var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo2);
-            timeOuts.push(startplay);
-            break;
-        case 3:
-            //var demo2 = normalLR(scoredemo2);
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo3);
-            timeOuts.push(startplay);
-            break;
-        case 4:
-            //var demo2 = normalLR(scoredemo2);
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo4);
-            timeOuts.push(startplay);
-            break;
-        case 5:
-            //var demo2 = normalLR(scoredemo2);
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo5);
             timeOuts.push(startplay);
             break;
     }
@@ -625,8 +574,8 @@ function HitOnce(intensity, LR, instrument, time) {
     var lr = LR || 'Right';
     var ins = instrument || 'b';
    
-    //console.log('stick1',stick1);
-    //console.log('stick2',stick1);
+    console.log('stick1',stick1);
+    console.log('stick2',stick1);
     if(ins !=='b'){
         if(lr === 'Right' ){
                 
