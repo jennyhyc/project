@@ -608,7 +608,7 @@ function onDocumentMouseDown( event , mode ) {
   if( inTake.length > 0 ){
     var takeName = inTake[0].object.name;
     //* long tap: (un)show this take
-    /**./
+    /**/
       presstimer = setTimeout(function() {
         //* here
         isTakeOn[takeName] = !isTakeOn[takeName];
@@ -645,6 +645,7 @@ function onDocumentMouseDown( event , mode ) {
     var insName = inInstrument[0].object.name;
     
     //* long click: on/off 
+    /**./
       presstimer = setTimeout(function() {
         //console.log("long click !!!");
         // change: instrument on/off
@@ -661,7 +662,7 @@ function onDocumentMouseDown( event , mode ) {
           instrumentNotes[currentTake][insName].mesh.material.color = colorTakes[currentTake].note;
         }
       },1000);
-      
+    /**/
     //* add notes
     if( instrumentButtonsIsOn[currentTake][insName] ){
       playSound(sounds[insName], 0, 1.0);
