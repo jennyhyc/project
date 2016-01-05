@@ -12,13 +12,10 @@
     text-align: center;
     text-valign: center;
   }
-  .but {
-		width: 4em;
-		border-style:outset;
-	}
+
   .note {
-		width: 100%;
-		padding-top:10%;
+    width: 1em;
+    height: 1em;
 	}
 </style>
 </head>
@@ -42,9 +39,10 @@
             <input type="number" id = "loopEndBar" size="4" onchange="updateLoopEnd(this.value);"> </li>
   </ul>
   <li>Quantize</li>
-  <ul>  <button type="button" class="but" onclick="javascript:quantize( 4);"><img class="note" src="http://jennyhyc.github.io/project/images/note/4.png"/></button>
-        <button type="button" class="but" onclick="javascript:quantize( 8);"><img class="note" src="http://jennyhyc.github.io/project/images/note/8.png"/></button>
-        <button type="button" class="but" onclick="javascript:quantize(16);"><img class="note" src="http://jennyhyc.github.io/project/images/note/16.png"/></button>
+  <ul>  <label> <input type="radio" name="note" value="0"  id="note0" > <img class="note" src="http://jennyhyc.github.io/project/images/note/0.png"/> </label> &nbsp;
+        <label> <input type="radio" name="note" value="4"  id="note4" > <img class="note" src="http://jennyhyc.github.io/project/images/note/4.png"/> </label> &nbsp;
+        <label> <input type="radio" name="note" value="8"  id="note8" > <img class="note" src="http://jennyhyc.github.io/project/images/note/8.png"/> </label> &nbsp;
+        <label> <input type="radio" name="note" value="16" id="note16"> <img class="note" src="http://jennyhyc.github.io/project/images/note/16.png"/></label> &nbsp;
   </ul>
 </ul>
   <div style="text-align:center">  
@@ -88,6 +86,12 @@ function setDefault() {
   document.getElementById("loopEndBar").value = window.opener.loopEndBar;
   document.getElementById("loopStartBar").min = 0;
   document.getElementById("loopEndBar").min = 1;
+  
+  document.getElementById("note0").checked = true;
+  /**./
+  var nowQuantize = "note" + window.opener.currentQuantize;
+  document.getElementById(nowQuantize).checked = true;
+  /**/
 }
 
 function saveSetting(){
@@ -99,6 +103,13 @@ function saveSetting(){
   var loopEndBar = document.getElementById("loopEndBar").value;
   window.opener.setLooper( loopStartBar, loopEndBar );
   
+  var noteRadio = document.getElementsByName("note");
+  for(var i=0; i<noteRadio.length; i++){
+    if( noteRadio[i].checked ){
+      note = Number( noteRadio[i].value );
+      break;
+    }
+  }
   window.opener.setQuantize( note );
   
   window.close();
