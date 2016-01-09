@@ -93,7 +93,7 @@ function colorTake(i, n, sn){
 }
 
 var playLine = new THREE.Object3D();
-var playLineMesh = new THREE.Mesh();
+var playLineMesh = new THREE.Mesh(), playLineMeshShow = new THREE.Mesh();
 var moveLinePlane = new THREE.Mesh();
 var isLineSelected = false;
 var preLinePos = unitD2;  // unitD2, 0
@@ -245,10 +245,15 @@ function init() {
     scene.add( currentTakeIcon );
     
   //* play line
-    playLineMesh = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitX, 32 ),
+    playLineMesh = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitD, 32 ),
                                    new THREE.MeshBasicMaterial( {color: colorMode["iconOn"]}) );
     playLineMesh.rotation.x = -Math.PI/2;
+    playLineMesh.visible = false;
+    playLineMeshShow = new THREE.Mesh( new THREE.PlaneGeometry( unitD*16, unitX, 32 ),
+                                   new THREE.MeshBasicMaterial( {color: colorMode["iconOn"]}) );
+    playLineMeshShow.rotation.x = -Math.PI/2;
     playLine.add( playLineMesh );
+    playLine.add( playLineMeshShow );
     playLine.position.set(0, unitX, 0);
     playLine.position.z += unitD2;
     scene.add( playLine );
@@ -1045,7 +1050,7 @@ function onDocumentMouseDown( event , mode) {
     //* long tap: (un)show this take
     presstimer = setTimeout(function() {
       console.log("play line !!!");
-      playLineMesh.material.color = colorMode["iconOff"];
+      playLineMeshShow.material.color = colorMode["iconOff"];
       preLinePos = playLine.position.z;
       isLineSelected = true;
     },500);
@@ -1095,7 +1100,7 @@ function onDocumentMouseUp( event ){
   
   if(isLineSelected){
     isLineSelected = false;
-    playLineMesh.material.color = colorMode["iconOn"];
+    playLineMeshShow.material.color = colorMode["iconOn"];
     if(playLine.position.z > unitD )
       playLine.position.z = unitD2;
     else
@@ -1316,7 +1321,7 @@ function addNewNote(insName){
           newNote = instrumentNotes[s.take][s.instrument].mesh.clone();
         else
           newNote = instrumentStrongNotes[s.take][s.instrument].mesh.clone();
-        newNote.position.set(instrumentNotes[currentTake][insName].posx, -unitX/1.5, -noteSheet[currentTake].position.z+sheetBottom);
+        newNote.position.set(instrumentNotes[currentTake][insName].posx, unitX/3, -noteSheet[currentTake].position.z+sheetBottom);
         noteSheet.add( newNote );
         // score
         var s = new score();
