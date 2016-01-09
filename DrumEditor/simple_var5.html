@@ -286,7 +286,7 @@ function init() {
     
     // Instrument Button
     playLine.add( instrumentSet );
-    instrumentSet.position.y = unitX;
+    //instrumentSet.position.y = unitX;
     instrumentSet.position.z = -(unitD2 + unitX);
     var tmpx = unitD*1.5;
     var tmp = - Math.floor(instrumentAmount/2)*tmpx;
@@ -451,6 +451,7 @@ function init() {
     
     //* playORpause
     scene.add( playORpause );
+    symPlane.visible = false;
     symPlane.name = "playORpause";
     scene.add( symPlane );
     toolbar.push( symPlane );
@@ -612,6 +613,7 @@ function init() {
   window.addEventListener( 'touchend', onDocumentMouseUp, false );
   
   //window.addEventListener("message", receiveMessage, false);
+  //controls = new THREE.OrbitControls (camera, renderer.domElement);
 }
 
 function blockMenu( event ){
@@ -736,7 +738,7 @@ function onDocumentMouseDown( event , mode) {
           newNote = instrumentNotes[currentTake][insName].mesh.clone();
         else
           newNote = instrumentStrongNotes[currentTake][insName].mesh.clone();
-        newNote.position.set(instrumentNotes[currentTake][insName].posx, -unitX/1.5, -noteSheet[currentTake].position.z+sheetBottom);
+        newNote.position.set(instrumentNotes[currentTake][insName].posx, unitX/3, -noteSheet[currentTake].position.z+sheetBottom);
         noteSheet[currentTake].add( newNote );
         // score
         var s = new score();
@@ -1141,6 +1143,7 @@ function onWindowResize (){
 }
 
 function animate(){
+  //controls.update();
   /////
   //var dt = context.currentTime - previousTime;
   //previousTime = context.currentTime;
