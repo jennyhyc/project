@@ -113,7 +113,7 @@ var currentScoreEnd;
 var loopStartBar = 1;
 var loopEndBar = 3;
 var loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
-var loopEnd = loopEndBar * beatPerBar * beatTimeS;
+var loopEnd = (loopEndBar * beatPerBar + 1)* beatTimeS;
 
 var currentQuantize = 0;  // 0, 4, 8, 16
 
@@ -146,6 +146,7 @@ score.prototype.playScore = function( delta ){
 }
 var scoresTo3D = [];
 
+var sheetOneBar = new THREE.Object3D();
 var sheets = [];
 var sheetH = unitD2;  // * beatPerBar;
 var sheetTop = -(unitD2*4 + sheetH);
@@ -166,6 +167,7 @@ var toolbar = [];
   var isMetronomeMute = false;
   var isMetronomeDing = false;
   var metroField = new THREE.Object3D();
+  var maxBeat = 0;
   // loop
   var loopMesh = new THREE.Mesh();
   var isLoop = false;
@@ -439,8 +441,10 @@ function init() {
       else                      sheetLine = beatLineMesh.clone();
       sheets[i].add( sheetLine );
       sheets[i].position.z = sheetBottom + i*sheetH;
-      scene.add( sheets[i] );
+      //scene.add( sheets[i] );
+      sheetOneBar.add( sheets[i] ); 
     }
+    noteSheet[0].add( sheetOneBar ); 
     
   //* tool
     var symMaterial = new THREE.MeshBasicMaterial( { color: colorMode[ "iconOn" ],
@@ -618,7 +622,7 @@ function init() {
   window.addEventListener( 'touchend', onDocumentMouseUp, false );
   
   //window.addEventListener("message", receiveMessage, false);
-  //controls = new THREE.OrbitControls (camera, renderer.domElement);
+  controls = new THREE.OrbitControls (camera, renderer.domElement);
 }
 
 function blockMenu( event ){
@@ -780,9 +784,14 @@ function onDocumentMouseDown( event , mode) {
               playORpause.add( pauseButton.clone() );
               console.log("!!! Start");
               isFirst = false;
+              isStart = true;
+              
+              currentBeat = -1;
+              if( currentBeat > maxBeat )
+                 maxBeat = currentBeat;
               //* countin & metronome
               var countinBeat = 0;
-              for(var i=0; i<beatPerBar; i++){
+              for(var i=1; i<=beatPerBar; i++){
                 setTimeout( function(){
                   countinBeat ++;
                   if( countinBeat%2 == 0 ){
@@ -793,7 +802,7 @@ function onDocumentMouseDown( event , mode) {
                     beatMesh[1].material.color = colorMode[ "beatInit" ];
                     beatMesh[0].material.color = colorMode[ "beatCurrent" ];
                   }
-                  
+                  console.log("count-in: "+countinBeat);
               //* start (end of count-in)
                   if( countinBeat == beatPerBar ){
                     var tmp = countinBeat%2;
@@ -802,20 +811,20 @@ function onDocumentMouseDown( event , mode) {
                     isPlayed = true;
                     isStart = false;
                     startTime = context.currentTime;
-                    //console.log("isPlay");
+                    console.log("isPlay");
                     
                     playMetronome();
                   }
                   /**/
                   //* sound
                   //if( isMetronomeMute ){
-                    if( countinBeat < beatPerBar )
+                    if( countinBeat > 1 )//if( countinBeat < beatPerBar )
                       playSound(sounds['metronome_click'], 0, metronomeVol);
                     else
                       playSound(sounds['metronome_ding'], 0, metronomeVol);
                   //}
                   /**/
-                }, beatTime*i);
+                }, beatTime*i );
               }
             }
             else if( isPlayed ){
@@ -830,7 +839,7 @@ function onDocumentMouseDown( event , mode) {
               
               setTimeout(function(){
                 playMetronome();
-                console.log(blank);
+                console.log("blank: "+blank);
               },blank); 
             }
             else{
@@ -845,7 +854,7 @@ function onDocumentMouseDown( event , mode) {
               //isMetronomeOn = false;
               beatMesh[0].material.color = colorMode[ "beatInit" ];
               beatMesh[1].material.color = colorMode[ "beatInit" ];
-              currentBeat = -1;
+              //currentBeat = -1;
               playMetronome();
             }
             
@@ -897,7 +906,7 @@ function onDocumentMouseDown( event , mode) {
           metronomeMesh.material.color = colorMode[ "iconOn" ];
           beatMesh[0].material.color = colorMode[ "beatInit" ];
           beatMesh[1].material.color = colorMode[ "beatInit" ];
-          currentBeat = -1;
+          //currentBeat = -1;
         }
         break;
       case "loop":
@@ -1048,12 +1057,14 @@ function onDocumentMouseDown( event , mode) {
   var inPlayLine = raycaster.intersectObject( playLineMesh );
   if( inPlayLine.length > 0 ){
     //* long tap: (un)show this take
-    presstimer = setTimeout(function() {
-      console.log("play line !!!");
-      playLineMeshShow.material.color = colorMode["iconOff"];
-      preLinePos = playLine.position.z;
-      isLineSelected = true;
-    },500);
+    if( !isPlayed ){
+      presstimer = setTimeout(function() {
+          console.log("play line !!!");
+          playLineMeshShow.material.color = colorMode["iconOff"];
+          preLinePos = playLine.position.z;
+          isLineSelected = true;
+      },500);
+    }
   }
 }
 
@@ -1148,13 +1159,17 @@ function onWindowResize (){
 }
 
 function animate(){
-  //controls.update();
+  controls.update();
   /////
   //var dt = context.currentTime - previousTime;
   //previousTime = context.currentTime;
   var dt = clock.getDelta();
-  /**/
   
+  if( isStart || isPlayed ){
+    //console.log(" [ START ] ");
+     noteSheet[0].position.z -= sheetH/(60/tempo)*dt;
+  }
+  /**./
   if( isStart || isPlayed ){
     //* Rolling Sheet
       
@@ -1172,9 +1187,12 @@ function animate(){
         sheets[i].position.z -= sheetH/(60/tempo)*dt;
      }
   }
+  /**/
   if( isPlayed ){
+    //console.log("1111111111111111111111111111111");
+    //alert("111111");
     //* Rolling NoteSheet
-    for(var i=0; i<=takeAmount; i++)
+    for(var i=1; i<=takeAmount; i++)
       noteSheet[i].position.z -= sheetH/(60/tempo)*dt;
     //console.log("current: "+currentScore);
     //* play scores
@@ -1200,7 +1218,7 @@ function animate(){
         /**/
         //currentScore = 0;
         currentScoreEnd = scores.length;
-        /**/
+        /**./
         // sheet
         for(var i=0; i<sheetAmount; i++){
           sheets[i].position.z = sheetBottom + i*sheetH;
@@ -1213,11 +1231,12 @@ function animate(){
           }
           sheets[i].position.z -= sheetH/(60/tempo)*loopStart;
         }
+        /**/
         for(var i=0; i<=takeAmount; i++){
           noteSheet[i].position.z = playLine.position.z;
           noteSheet[i].position.z -= sheetH/(60/tempo)*loopStart;
         }
-        /**/
+        
       }
       /* play scores*/
       for( var i=currentScore; i<currentScoreEnd; i++){
@@ -1255,9 +1274,18 @@ function sortByTime(a,b){
 }
 
 function playMetronome(){
+  
   if( !isMetronomeOn || !isPlayed )  return;
   
   currentBeat++;
+  console.log("beat: "+ currentBeat);
+  if( currentBeat > maxBeat ) 
+    if( currentBeat%sheetAmount == 1  ){
+      var x = sheetOneBar.clone();
+      x.position.z = sheetH*Math.ceil(currentBeat/sheetAmount)*sheetAmount;
+      noteSheet[0].add( x );
+      console.log( "ADD SHEET ");
+    }
   if( currentBeat%2 == 0 ){
     beatMesh[1].material.color = colorMode[ "beatCurrent" ];
     beatMesh[0].material.color = colorMode[ "beatInit" ];
@@ -1267,15 +1295,17 @@ function playMetronome(){
     beatMesh[0].material.color = colorMode[ "beatCurrent" ];
   }
   
-  if( currentBeat%beatPerBar == 0 ){
+  if( currentBeat%beatPerBar == 1 ){
     var tmp = currentBeat%2;
     if( tmp == 0 )  beatMesh[1].material.color = colorMode[ "beatOnBar" ];
     else            beatMesh[0].material.color = colorMode[ "beatOnBar" ];
   }
   
   if( !isMetronomeMute ){
-    if( isMetronomeDing && currentBeat%beatPerBar == 0 )
+    if( (isMetronomeDing && currentBeat%beatPerBar == 1) || currentBeat==1 ){
       playSound(sounds['metronome_ding'], 0, metronomeVol);
+      console.log("[DING] " + currentBeat);
+    }
     else
       playSound(sounds['metronome_click'], 0, metronomeVol);
   }
@@ -1287,13 +1317,14 @@ function playMetronome(){
 }
 
 function addNoteMesh(s){
+  //* add notes
   // graph
   var newNote;// = instrumentNotes[s.take][s.instrument].mesh.clone();
   if( s.intensity == normalVol )
     newNote = instrumentNotes[s.take][s.instrument].mesh.clone();
   else
     newNote = instrumentStrongNotes[s.take][s.instrument].mesh.clone();
-  newNote.position.set(instrumentNotes[s.take][s.instrument].posx, -unitX/1.5, (sheetH * s.time));
+  newNote.position.set(instrumentNotes[s.take][s.instrument].posx, unitX/3, (sheetH * s.time));
   noteSheet[s.take].add( newNote );
 }
 
@@ -1342,9 +1373,16 @@ function setMetornome( newBeats, newTempo ){
   //console.log("0: "+tempo+" / "+beatTime+" / "+beatPerBar);
   //* rollingSheet
     // delete sheets
+    /**./
     for( var i=0; i<sheetAmount; i++ ){
       scene.remove( sheets[i] );
     }
+    /**/
+    for( var i=0; i<noteSheet[0].children.length; i++)
+      noteSheet[0].children[i].visible = 0;
+    noteSheet[0].children.length = 0;
+    sheetOneBar = new THREE.Object3D();
+    maxBeat = 0;
     sheets = [];
     console.log("1: "+sheets.length);
     
@@ -1374,8 +1412,9 @@ function setMetornome( newBeats, newTempo ){
       else                      sheetLine = beatLineMesh.clone();
       sheets[i].add( sheetLine );
       sheets[i].position.z = sheetBottom + i*sheetH;
-      scene.add( sheets[i] );
+      sheetOneBar.add( sheets[i] );
     }
+    noteSheet[0].add( sheetOneBar );
     for(var i=0; i<=takeAmount; i++)
       noteSheet[i].position.z = playLine.position.z;
     //console.log("3: "+sheets.length);
@@ -1386,7 +1425,7 @@ function setLooper( newStart, newEnd ){
   loopStartBar = Number( newStart );
   loopEndBar = Number( newEnd );
   loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
-  loopEnd = loopEndBar * beatPerBar * beatTimeS;  
+  loopEnd = (loopEndBar * beatPerBar + 1)* beatTimeS;
 }
 
 function setQuantize( note ){
@@ -1399,7 +1438,7 @@ function setQuantize( note ){
     }
     scores = [];
     
-    for(var i=0; i<=takeAmount; i++){
+    for(var i=1; i<=takeAmount; i++){
       for(var j=0; j<noteSheet[i].children.length; j++){
         noteSheet[i].children[j].visible = false;
       }
@@ -1469,6 +1508,39 @@ function setQuantize( note ){
   currentScore = 0;
   currentScoreEnd = scores.length;
   /**/
+}
+
+function setStart(){
+  //* stop & set loop
+    clearTimeout(tapped); //stop single tap callback
+    tapped=null;
+    console.log("!!! Stop");
+    // icon
+    if( isPlayed ){
+      scene.remove( playORpause );
+      playORpause = new THREE.Object3D();
+      playORpause.position.copy( toolbarPosLC );
+      playORpause.add( playButton.clone() );
+      scene.add( playORpause );
+    }
+    // sheet
+    for(var i=0; i<sheetAmount; i++)
+      sheets[i].position.z = sheetBottom + i*sheetH;
+    for(var i=0; i<=takeAmount; i++)
+      noteSheet[i].position.z = playLine.position.z;
+    
+    //loopMesh.visible = true;
+    isFirst = true;
+    isStart = false;
+    isPlayed = false;
+    //isMetronomeOn = false;
+    
+    if( scores.length > 0 ){
+      scores.sort( sortByTime );
+      currentScore = 0;
+      currentScoreEnd = scores.length;
+    }
+
 }
 </script>
 
