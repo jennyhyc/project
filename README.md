@@ -1,5 +1,8 @@
 # project
 <h4>Drum Editor</h4>
+- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var5.html">Var 5</a>
+  - improve Quantize
+  - Intensity: normal/strong (move playLine)
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_show.html">show</a>
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var4.html">Simple Var 4</a> (<a href="http://jennyhyc.github.io/project/DrumEditor/simple_var4.0.html">Simple Var 4.0</a>)
   - test 3D mode
@@ -7,7 +10,7 @@
   - setting plane
     - metronome
     - looper
-    - quautize
+    - quantize
   - save & load
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var2.html">Simple Var 2</a>
   - takes: in/visible & clean
