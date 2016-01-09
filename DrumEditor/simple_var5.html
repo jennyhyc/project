@@ -622,7 +622,7 @@ function init() {
   window.addEventListener( 'touchend', onDocumentMouseUp, false );
   
   //window.addEventListener("message", receiveMessage, false);
-  controls = new THREE.OrbitControls (camera, renderer.domElement);
+  //controls = new THREE.OrbitControls (camera, renderer.domElement);
 }
 
 function blockMenu( event ){
@@ -1159,7 +1159,7 @@ function onWindowResize (){
 }
 
 function animate(){
-  controls.update();
+  //controls.update();
   /////
   //var dt = context.currentTime - previousTime;
   //previousTime = context.currentTime;
