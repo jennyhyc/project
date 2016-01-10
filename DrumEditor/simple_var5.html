@@ -78,7 +78,7 @@ var metronomeVol = 0.3;
 var takes = [];
 var isTakeOn = [];
 var takeAmount = 5;
-var currentTake = 5;
+var currentTake = 1;
 var currentTakeIcon = new THREE.Object3D();
 
 //"onCylinder", "onCircle", "offCylinder", "offCircle", "background"
@@ -110,9 +110,9 @@ var startTime = 0;      // isPlayed = true
 var isPause = false, pauseTime;
 var currentScore = 0;   // 
 var currentScoreEnd;
-var loopStartBar = 1;
-var loopEndBar = 3;
-var loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
+var loopStartBar = 0;
+var loopEndBar = 1;
+var loopStart = (loopStartBar * beatPerBar + 1) * beatTimeS;      // set loop: (end-start) sec
 var loopEnd = (loopEndBar * beatPerBar + 1)* beatTimeS;
 
 var currentQuantize = 0;  // 0, 4, 8, 16
@@ -1424,7 +1424,8 @@ function setMetornome( newBeats, newTempo ){
 function setLooper( newStart, newEnd ){
   loopStartBar = Number( newStart );
   loopEndBar = Number( newEnd );
-  loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
+  //loopStart = loopStartBar * beatPerBar * beatTimeS;      // set loop: (end-start) sec
+  loopStart = (loopStartBar * beatPerBar + 1) * beatTimeS; 
   loopEnd = (loopEndBar * beatPerBar + 1)* beatTimeS;
 }
 
