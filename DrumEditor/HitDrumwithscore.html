@@ -13,8 +13,9 @@
   position: absolute;
   top: 0px;
   padding: 10px;
-  text-align: center;
-  color: #00ff00
+  text-align: left;
+  right:5%;
+  color: #00ff00;
 }
 body {
     overflow: hidden;
@@ -130,13 +131,13 @@ var Stick = function () {
         timeS: 0,
         value: 0
     }, {
-        timeS: 0.2,
+        timeS: 0.1,
         value: 0.2//3.14 / 4
     }, {
-        timeS: 0.4,
+        timeS: 0.2,
         value: -.2
     },{
-        timeS: 0.8,
+        timeS: 0.5,
         value: 0
     },
        {
@@ -202,7 +203,7 @@ var BassStep = function () {
         timeS: 0,
         value: -0.52
     },{
-        timeS: 0.5,
+        timeS: 0.2,
         value: 0//3.14 / 4
     },{
         timeS: 1,
@@ -213,7 +214,7 @@ var BassStep = function () {
         timeS: 0,
         value: -0.52
     },{
-        timeS: 0.5,
+        timeS: 0.2,
         value: 0.5//3.14 / 4
     },{
         timeS: 1,
@@ -296,53 +297,54 @@ function setFrame(){
     chairframeR.position.set ( poschair.x+15, poschair.y+110, poschair.z );
     chairframeR.quaternion.setFromAxisAngle(new THREE.Vector3(0, -1, 0), 0);
     snareframeR = new THREE.Object3D();
-    snareframeR.position.set (30, 140, -50) ;
-    snareframeR.quaternion.setFromEuler(new THREE.Euler(0, Math.PI/3, 0, 'YZX'));
+    snareframeR.position.set (-10, 140, -20) ;
+    snareframeR.quaternion.setFromEuler(new THREE.Euler(0, Math.PI/5, 0, 'YZX'));
     standbyframeR = new THREE.Object3D();
     standbyframeR.position.set ( poschair.x+30, poschair.y+170, poschair.z-10);
     standbyframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/12, Math.PI/4, 0, 'YZX'));
     hihatframeR = new THREE.Object3D();
     hihatframeR.position.set ( -35, 170, -65);
     hihatframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/3, 0, 'YZX'));
-    tomLwframeR = new THREE.Object3D();
-    tomLwframeR.position.set ( 0, 180, -80);
-    tomLwframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/14, 0, 'YZX'));
     tomHhframeR = new THREE.Object3D();
-    tomHhframeR.position.set ( 90, 180, -80);
+    tomHhframeR.position.set ( 0, 180, -80);
     tomHhframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/14, 0, 'YZX'));
+    tomLwframeR = new THREE.Object3D();
+    tomLwframeR.position.set ( 90, 180, -80);
+    tomLwframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/14, 0, 'YZX'));
     tomFlframeR = new THREE.Object3D();
-    tomFlframeR.position.set ( 30, 135, -45);
-    tomFlframeR.quaternion.setFromEuler(new THREE.Euler( 0, -Math.PI/3, 0, 'YZX'));
+    tomFlframeR.position.set ( 90, 135,-20);
+    tomFlframeR.quaternion.setFromEuler(new THREE.Euler( 0, -Math.PI/10, 0, 'YZX'));
     crashframeR = new THREE.Object3D();
-    crashframeR.position.set ( -50, 215, -70);
+    crashframeR.position.set ( -40, 215, -80);
     crashframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, Math.PI/8, 0, 'YZX'));
     rideframeR = new THREE.Object3D();
     rideframeR.position.set ( 110, 215, -40);
     rideframeR.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, -Math.PI/12, 0, 'YZX'));
+
     chairframeL = new THREE.Object3D();
     chairframeL.position.set ( poschair.x-15, poschair.y+110, poschair.z);
     chairframeL.quaternion.setFromAxisAngle(new THREE.Vector3(0, -1, 0), 0);
     snareframeL = new THREE.Object3D();
-    snareframeL.position.set (-30, 140, 0); 
-    snareframeL.quaternion.setFromEuler(new THREE.Euler(0, Math.PI/6, 0, 'YZX'));
+    snareframeL.position.set (-60, 140, 10); 
+    snareframeL.quaternion.setFromEuler(new THREE.Euler(0, Math.PI/12, 0, 'YZX'));
     standbyframeL = new THREE.Object3D();
     standbyframeL.position.set ( poschair.x-30, poschair.y+155, poschair.z-10);
     standbyframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/12, -Math.PI/4, 0, 'YZX'));
     hihatframeL = new THREE.Object3D();
-    hihatframeL.position.set ( -145, 175, -5);
-    hihatframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
-    tomLwframeL = new THREE.Object3D();
-    tomLwframeL.position.set ( -60, 180, -80);
-    tomLwframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
+    hihatframeL.position.set ( -105 ,175, -5);
+    hihatframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, Math.PI/8, 0, 'YZX'));
     tomHhframeL = new THREE.Object3D();
-    tomHhframeL.position.set ( 30, 180, -80);
+    tomHhframeL.position.set ( -60, 180, -80);
     tomHhframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
+    tomLwframeL = new THREE.Object3D();
+    tomLwframeL.position.set ( 30, 180, -80);
+    tomLwframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/8, -Math.PI/14, 0, 'YZX'));
     tomFlframeL = new THREE.Object3D();
     tomFlframeL.position.set ( 20, 135, -75);
     tomFlframeL.quaternion.setFromEuler(new THREE.Euler(0, -Math.PI/3, 0, 'YZX'));
     crashframeL = new THREE.Object3D();
-    crashframeL.position.set ( -125, 220, -70);
-    crashframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, -Math.PI/14, 0, 'YZX'));
+    crashframeL.position.set ( -60, 215, -70);
+    crashframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, Math.PI/8, 0, 'YZX'));
     rideframeL = new THREE.Object3D();
     rideframeL.position.set ( 40, 215, -70);
     rideframeL.quaternion.setFromEuler(new THREE.Euler(Math.PI/7, -Math.PI/4, 0, 'YZX'));    
@@ -390,6 +392,7 @@ function init() {
     stick1.frame2 = chairframeR.clone();
     stick1.setT(0.5);
     stick1.startOneCycle();
+    stick1.group.children[3].material.color.setHex(0x0000ff);
     frame.add(stick1.object);
   /*  var axisHelperR = new THREE.AxisHelper(55);
     stick1.object.add(axisHelperR);
@@ -399,6 +402,7 @@ function init() {
     stick2.frame2 = chairframeL.clone();
     stick2.setT(0.5);
     stick2.startOneCycle();
+    stick2.group.children[3].material.color.setHex(0xff0000);
     frame.add(stick2.object);
    /* var axisHelperL = new THREE.AxisHelper(55);
     stick2.object.add(axisHelperL);
@@ -477,8 +481,6 @@ var check = 1;
 
 $('#play').click(function(){
     //* here: get scores
-
-
         
     if(check){
         setTimeoutControl = 1;
@@ -491,7 +493,7 @@ $('#play').click(function(){
     //HitOnce();
 });
 $('#play1').click(function(){
-    
+    reset();
     if(check){
         setTimeoutControl = 1;
         bpm = 120;
@@ -503,7 +505,7 @@ $('#play1').click(function(){
     //HitOnce();
 });
 $('#play2').click(function(){
-    
+    reset();
     if(check){
         setTimeoutControl = 1;
         bpm = 150;
@@ -514,7 +516,7 @@ $('#play2').click(function(){
     }
 });
 $('#play3').click(function(){
-    
+    reset();
     if(check){
         setTimeoutControl = 1;
         bpm = 90;
@@ -525,10 +527,10 @@ $('#play3').click(function(){
     }
 });
 $('#play4').click(function(){
-    
+    reset();
     if(check){
         setTimeoutControl = 1;
-        bpm = 60;
+        bpm = 120;
         stick1.setT(60/bpm);
         stick2.setT(60/bpm);
         standby(4);
@@ -536,13 +538,24 @@ $('#play4').click(function(){
     }
 });
 $('#play5').click(function(){
-    
+    reset();
     if(check){
         setTimeoutControl = 1;
         bpm = 120;
         stick1.setT(60/bpm);
         stick2.setT(60/bpm);
         standby(5);
+        check = 0;
+    }
+});
+$('#play6').click(function(){
+    reset();
+    if(check){
+        setTimeoutControl = 1;
+        bpm = 90;
+        stick1.setT(60/bpm);
+        stick2.setT(60/bpm);
+        standby(6);
         check = 0;
     }
 });
@@ -556,6 +569,15 @@ $('#reset').click(function(){
     stick1.frame2 = chairframeR.clone();
     stick2.frame2 = chairframeL.clone();
 });
+function reset(){
+    setTimeoutControl = 0;
+    check = 1;
+    Stoptimeout();
+    stick1.frame1 = chairframeR.clone();
+    stick2.frame1 = chairframeL.clone();
+    stick1.frame2 = chairframeR.clone();
+    stick2.frame2 = chairframeL.clone();
+}
 var checkstip = 1;
 function stop(){
     checkstop ^= 1;
@@ -568,16 +590,21 @@ function standby(scoreNum){
     stick2.frame1 = standbyframeL.clone();
     stick1.frame2 = standbyframeR.clone();
     stick2.frame2 = standbyframeL.clone();
-    for (var i = 0; i < 4; i++) {
-        var motion = setTimeout(HitOnce, i *(60/bpm*1000), 0.5, 'Right','st',i);
+    for (var i = 0; i < 8; i++) {
+        if(i < 4){
+            if(i === 0){
+                var motion = setTimeout(HitOnce, i *(60/bpm*1000), 0.5, 'Right','st',i);
+            }else if(i === 2)
+                var motion = setTimeout(HitOnce, i *(60/bpm*1000), 0.5, 'Right','st',i);
+        }else{
+            var motion = setTimeout(HitOnce, i *(60/bpm*1000), 0.5, 'Right','st',i);
+        }
         timeOuts.push(motion);
     }
     switch(scoreNum){
         case 0:
-            console.log(scores);
-            var startplay = setTimeout(playScore1, i * (60/tempo*1000), demo);
+            var startplay = setTimeout(playScore1, i * (60/bpm*1000), score);
             timeOuts.push(startplay);
-            break;
         case 1:
             //var demo1 = normalLR(scoredemo);
             console.log(scoredemo);
@@ -590,24 +617,27 @@ function standby(scoreNum){
             timeOuts.push(startplay);
             break;
         case 3:
-            //var demo2 = normalLR(scoredemo2);
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo3);
+            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo3,true);
             timeOuts.push(startplay);
             break;
         case 4:
-            //var demo2 = normalLR(scoredemo2);
             var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo4);
             timeOuts.push(startplay);
             break;
         case 5:
-            //var demo2 = normalLR(scoredemo2);
             var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo5);
+            timeOuts.push(startplay);
+            break;
+        case 6:
+            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo6);
             timeOuts.push(startplay);
             break;
     }
     
     
 }
+
+    
 function playSound(buffer,time,intensity){
     var gainNode = context.createGain();
     var source = context.createBufferSource();
@@ -625,12 +655,11 @@ function HitOnce(intensity, LR, instrument, time) {
     var ii = intensity || (3.14/4);
     var lr = LR || 'Right';
     var ins = instrument || 'b';
-   
-    //console.log('stick1',stick1);
-    //console.log('stick2',stick1);
+
+
+
     if(ins !=='b'){
         if(lr === 'Right' ){
-                
                 if(ins ==='s')
                     stick1.frame2 = snareframeR.clone();
                 if(ins ==='hatOp'){
@@ -658,7 +687,6 @@ function HitOnce(intensity, LR, instrument, time) {
             }
             
         if(lr === 'Left' ){
-            
                 if(ins ==='s')
                     stick2.frame2 = snareframeL.clone();
                 if(ins ==='hatOp'){
@@ -683,13 +711,17 @@ function HitOnce(intensity, LR, instrument, time) {
                 stick2.startOneCycle();
                 var sound = setTimeout(Sound,  (stick2.keys[2].timeS*stick2.T) * 1000, ins, ii);
         }
+        if(lr === 'null'){
+            var sound = setTimeout(Sound,  (stick2.keys[2].timeS*stick2.T) * 1000, ins, ii);
+        }
     }else if(ins === 'b' ){
         
             step.setSoundIntensity(ii)
             step.startOneCycle();
-            var sound = setTimeout(Sound,  (step.headkeys[2].timeS*step.T) * 1000, ins, ii);
+            var sound = setTimeout(Sound,  (step.headkeys[1].timeS*step.T) * 1000, ins, ii);
             timeOuts.push(sound);
     }
+
 }
 function Sound(instrument, intensity){
     var ins = instrument || 's';
@@ -728,16 +760,17 @@ function Sound(instrument, intensity){
         break;
     }
 }
-function playScore1(score) {
+function playScore1(score,repeat) {
     var sco = score || [];
+    var re = repeat || false;
     for (var i = 0; i < sco.length; i++) {
         var timeout = setTimeout(HitOnce, sco[i].time *(60/bpm*1000)/2, sco[i].intensity, sco[i].LR, sco[i].instrument, sco[i].time);
-        //var sound = setTimeout(Sound,  (sco[i].time) *(60/bpm*1000)/2, sco[i].instrument, sco[i].intensity);
         timeOuts.push(timeout);
-        //timeOuts.push(sound);
     }
-    var nextround = setTimeout(playScore1, (sco[sco.length-1].time+1) *(60/bpm*1000)/2, sco);
+    if(re){
+    var nextround = setTimeout(playScore1, (sco[sco.length-1].time+1) *(60/bpm*1000)/2, sco,true);
     timeOuts.push(nextround);
+    }
 }
 function Stoptimeout(){
     for(var i = 0; i < timeOuts.length; i++)
