@@ -445,7 +445,7 @@ function init() {
     lightarray[0].target = snare;
     lightarray[1].target = bass;
     var floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800, 30, 30),
-    new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('pkin159.github.io/project/floor.jpg')}));
+    new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('https://pkin159.github.io/project/floor.jpg')}));
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
     floor.castShadow = true; floor.receiveShadow = true;
