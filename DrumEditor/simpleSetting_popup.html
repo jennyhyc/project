@@ -44,6 +44,11 @@
         <label> <input type="radio" name="note" value="8"  id="note8" > <img class="note" src="http://jennyhyc.github.io/project/images/note/8.png"/> </label> &nbsp;
         <label> <input type="radio" name="note" value="16" id="note16"> <img class="note" src="http://jennyhyc.github.io/project/images/note/16.png"/></label> &nbsp;
   </ul>
+  <li>Storage</li>
+  <ul>  <label> <input type="radio" name="storage" id="file" > file </label> &nbsp;
+        <label> <input type="radio" name="storage" id="local" > local </label> &nbsp;
+        
+  </ul>
 </ul>
   <div style="text-align:center">  
     <button onclick="saveSetting()">OK</button>
@@ -92,6 +97,15 @@ function setDefault() {
   var nowQuantize = "note" + window.opener.currentQuantize;
   document.getElementById(nowQuantize).checked = true;
   /**/
+  
+  if( window.opener.storageType == "local" ){
+    document.getElementById("file").checked = false;
+    document.getElementById("local").checked = true;
+  }
+  else{
+    document.getElementById("file").checked = true;
+    document.getElementById("local").checked = false;
+  }
 }
 
 function saveSetting(){
@@ -112,6 +126,11 @@ function saveSetting(){
   }
   window.opener.setQuantize( note );
   
+  if( document.getElementById("local").checked )
+    window.opener.setStorage( "local" );
+  else
+    window.opener.setStorage( "file" );
+    
   window.opener.setStart();
   window.close();
 }
