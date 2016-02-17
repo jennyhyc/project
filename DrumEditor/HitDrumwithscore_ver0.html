@@ -102,8 +102,8 @@ for(var i=0; i<tmp.length; i++){
     }
 scores.push( tempscore );
 }
-
 var demo = normalLR(scores);
+
 var demo1 = normalLR(scoredemo);
 var demo2 = normalLR(scoredemo2);
 var demo3 = scoredemo3;
@@ -445,11 +445,7 @@ function init() {
     lightarray[0].target = snare;
     lightarray[1].target = bass;
     var floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800, 30, 30),
-<<<<<<< HEAD
-    new THREE.MeshLambertMaterial(/*{map:THREE.ImageUtils.loadTexture('https://pkin159.github.io/project/floor.jpg')}*/));
-=======
-    new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('../images/floor.jpg')}));
->>>>>>> master
+    new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('floor.jpg')}));
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
     floor.castShadow = true; floor.receiveShadow = true;
@@ -607,13 +603,8 @@ function standby(scoreNum){
     }
     switch(scoreNum){
         case 0:
-<<<<<<< HEAD
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), scores);
-=======
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo);
->>>>>>> master
+            var startplay = setTimeout(playScore1, i * (60/bpm*1000), score);
             timeOuts.push(startplay);
-            break;
         case 1:
             //var demo1 = normalLR(scoredemo);
             console.log(scoredemo);
@@ -776,7 +767,6 @@ function playScore1(score,repeat) {
         var timeout = setTimeout(HitOnce, sco[i].time *(60/bpm*1000)/2, sco[i].intensity, sco[i].LR, sco[i].instrument, sco[i].time);
         timeOuts.push(timeout);
     }
-    console.log(sco);
     if(re){
     var nextround = setTimeout(playScore1, (sco[sco.length-1].time+1) *(60/bpm*1000)/2, sco,true);
     timeOuts.push(nextround);
