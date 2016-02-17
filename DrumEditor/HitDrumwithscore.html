@@ -445,11 +445,7 @@ function init() {
     lightarray[0].target = snare;
     lightarray[1].target = bass;
     var floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800, 30, 30),
-<<<<<<< HEAD
-    new THREE.MeshLambertMaterial(/*{map:THREE.ImageUtils.loadTexture('https://pkin159.github.io/project/floor.jpg')}*/));
-=======
     new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('../images/floor.jpg')}));
->>>>>>> master
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
     floor.castShadow = true; floor.receiveShadow = true;
@@ -607,11 +603,7 @@ function standby(scoreNum){
     }
     switch(scoreNum){
         case 0:
-<<<<<<< HEAD
-            var startplay = setTimeout(playScore1, i * (60/bpm*1000), scores);
-=======
             var startplay = setTimeout(playScore1, i * (60/bpm*1000), demo);
->>>>>>> master
             timeOuts.push(startplay);
             break;
         case 1:
@@ -789,7 +781,6 @@ function Stoptimeout(){
 function render() {
     renderer.render(scene, camera);
 }
-
 
 
 </script>
