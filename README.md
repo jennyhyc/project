@@ -1,5 +1,7 @@
 # project
 <h4>Drum Editor</h4>
+- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var6.html">Var 6</a>
+  - improve Quantize
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var5.html">Var 5</a>
   - improve Quantize
   - Intensity: normal/strong (move playLine)
