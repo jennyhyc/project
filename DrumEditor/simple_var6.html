@@ -1536,7 +1536,7 @@ function setQuantize( note ){
           var tmp0 = Math.floor( s[i].time );
           var tmp = s[i].time - tmp0;
           if( tmp < 0.25 )
-            s[i].time = tmp;
+            s[i].time = tmp0;
           else if( tmp < 0.75 )
             s[i].time = tmp0 + 0.5;
           else
@@ -1582,7 +1582,7 @@ function setQuantize( note ){
             addNoteMesh( scores[scores.length-1] );
           }
           //notes[i].position.z = sheetH * scores[i].time;
-          console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
+          //console.log("tmp1: "+tmp1+"\ttime: "+s[i].time);
         }
         console.log( "16new: " + scores.length );
         break;
