@@ -298,7 +298,7 @@ function init() {
                                                                  polygonOffsetUnits: 4.0,
                                                                  polygonOffsetFactor: 2.0} ));
       ins.circle.rotation.x = -Math.PI/2;
-      var drumImg = THREE.ImageUtils.loadTexture('images/drumSymbol/'+drumName[i]+'.png');
+      var drumImg = THREE.ImageUtils.loadTexture('../images/drumSymbol/'+drumName[i]+'.png');
       ins.instrument = new THREE.Mesh( new THREE.CircleGeometry( unitD-unitX*3, 32 ),//new THREE.PlaneGeometry(baseDistance*2,baseDistance*2),//new THREE.SphereGeometry( blank/2, 32, 32 ), 
                                        new THREE.MeshBasicMaterial( {
                                           map: drumImg,
@@ -469,7 +469,7 @@ function init() {
       //scene.add( pauseButton );
     
     //* setting
-      var settingMap = THREE.ImageUtils.loadTexture("images/tool/setting.png");
+      var settingMap = THREE.ImageUtils.loadTexture("../images/tool/setting.png");
       var settingMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                         new THREE.MeshBasicMaterial({
                                             color: colorMode[ "iconOn" ],
@@ -482,7 +482,7 @@ function init() {
       settingMesh.name = "setting";
       toolbar.push( settingMesh );
     //* loop
-      var loopMap = THREE.ImageUtils.loadTexture("images/tool/loop.png");
+      var loopMap = THREE.ImageUtils.loadTexture("../images/tool/loop.png");
       loopMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                  new THREE.MeshBasicMaterial({
                                      color: colorMode[ "iconOff" ],
@@ -497,7 +497,7 @@ function init() {
       toolbar.push( loopMesh );
       //loopMesh.visible = false;
     //* trash
-      var trashMap = THREE.ImageUtils.loadTexture("images/tool/trash.png");
+      var trashMap = THREE.ImageUtils.loadTexture("../images/tool/trash.png");
       var trashMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                         new THREE.MeshBasicMaterial({
                                             color: colorMode[ "iconOn" ],
@@ -511,7 +511,7 @@ function init() {
       trashMesh.name = "trash";
       toolbar.push( trashMesh );
   //* save & load
-    var saveMap = THREE.ImageUtils.loadTexture("images/tool/save.png");
+    var saveMap = THREE.ImageUtils.loadTexture("../images/tool/save.png");
     var saveMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                       new THREE.MeshBasicMaterial({
                                           color: colorMode[ "iconOn" ],
@@ -525,7 +525,7 @@ function init() {
     scene.add( saveMesh );
     saveMesh.name = "save";
     toolbar.push( saveMesh );
-    var loadMap = THREE.ImageUtils.loadTexture("images/tool/load.png");
+    var loadMap = THREE.ImageUtils.loadTexture("../images/tool/load.png");
     var loadMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                       new THREE.MeshBasicMaterial({
                                           color: colorMode[ "iconOn" ],
@@ -539,7 +539,7 @@ function init() {
     loadMesh.name = "load";
     toolbar.push( loadMesh );
   //* 3Dglasses
-      var glassesMap = THREE.ImageUtils.loadTexture("images/tool/3Dglasses.png");
+      var glassesMap = THREE.ImageUtils.loadTexture("../images/tool/3Dglasses.png");
       var glassesMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                         new THREE.MeshBasicMaterial({
                                             //color: colorMode[ "iconOn" ],
@@ -554,7 +554,7 @@ function init() {
   //* metronome 
     metroField.position.copy( toolbarPosL );
     scene.add( metroField );
-    var metronomeMap = THREE.ImageUtils.loadTexture("images/tool/metronome.png");
+    var metronomeMap = THREE.ImageUtils.loadTexture("../images/tool/metronome.png");
     metronomeMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(unitD, unitD, 32 ), 
                                     new THREE.MeshBasicMaterial({
                                         color: colorMode[ "iconOn" ],
