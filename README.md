@@ -1,6 +1,8 @@
 # project
 <h4>Drum Editor</h4>
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_wav.html">wav</a>
+- <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var7.html">Var 7</a>
+  - window resize
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var6.html">Var 6</a>
   - improve Quantize
 - <a href="http://jennyhyc.github.io/project/DrumEditor/simple_var5.html">Var 5</a>
