@@ -33,10 +33,6 @@
     client.connect(options);
   }
   
-  function test(){
-    publish("123",publishTopic,2);
-  }
-  
   function sendLocation(){
     clock = setTimeout(sendLocation , 2000);
     geoFindMe();
@@ -56,7 +52,9 @@
       var latitude  = position.coords.latitude;
       var longitude = position.coords.longitude;
       
-      var text = "latitude: " + latitude + " / longitude: " + longitude;
+      var text = '{"latitude":' + latitude + ',"longitude":' + longitude +'}';
+      //var pos = JSON.parse(text);
+      //console.log(pos);
       
       publish(text,publishTopic,1);
       
