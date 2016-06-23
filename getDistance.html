@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://www.hivemq.com/demos/websocket-client/js/mqttws31.js"></script>
+</head>
+
+<body>
+  <button onclick="start()">startMQTT</button>
+  <h3><b>MQTT state:</b> <div id="connectInfo"><br/></div></h3>
+  
+  <button onclick="getLocation()">getDistance(per 2 sec)</button>
+  <button onclick="stopSending()">stopSending</button>
+  <br/>
+  <button onclick="geoFindMe()">getDistance(once)</button>
+  <br/><br/>
+  <button onclick="turnOnLed()">on</button>
+  <button onclick="turnOffLed()">off</button>
+  <div id="messages"></div>
+<script>
+  //* html element
+  var connectInfo = document.getElementById("connectInfo");
+  var messages = document.getElementById("messages");
+  
+  //* MQTT
+  var hostname = "broker.mqttdashboard.com";//"iot.eclipse.org";//
+  var port = 8000;
+  var clientID = "TTU_I4B26";
+  var subscribeTopic = "TTU/I4B26";
+  var publishTopic = "TTU/control";
+  var client = new Messaging.Client(hostname, port, clientID);
+  
+  var clock;
+  var uLocation = undefined;
+  var myDistance = undefined;
+  
+  function start(){
+    client.connect(options);
+  }
+  
+  function turnOnLed(){
+    publish("1",publishTopic,1);
+  }
+  function turnOffLed(){
+    publish("0",publishTopic,1);
+  }
+  
+  function getLocation(){
+    clock = setTimeout(getLocation , 2000);
+    geoFindMe();
+  }
+  
+  function stopSending(){
+    clearTimeout(clock);
+  }
+  
+  /* using geolocation: https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation */
+  function geoFindMe() {
+    if (!navigator.geolocation){
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    
+    function success(position) {
+      var latitude  = position.coords.latitude;
+      var longitude = position.coords.longitude;
+      
+      //var text = '{"latitude":' + latitude + ',"longitude":' + longitude +'}';
+      //var pos = JSON.parse(text);
+      //console.log(pos);
+      myDistance = distance(longitude, latitude, uLocation.longitude, uLocation.latitude);
+      //console.log("myDistance: "+myDistance);
+      messages.innerHTML = myDistance + "<br/>" + messages.innerHTML;
+      //publish(text,publishTopic,1);
+      
+    };
+
+    function error() {
+      alert("Unable to retrieve your location");
+    };
+    
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+  /* - using geolocation */
+  
+  /* MQTT */
+  //Gets called if the websocket/mqtt connection gets disconnected for any reason
+  client.onConnectionLost = function (responseObject) {
+     //Depending on your scenario you could implement a reconnect logic here
+     connectInfo.innerHTML = ("connection lost: " + responseObject.errorMessage);
+  };
+
+  //* Connect Options
+  var options = {
+    timeout: 3,
+    //Gets Called if the connection has sucessfully been established
+    onSuccess: function () {
+      connectInfo.innerHTML = "Connected! ";
+      client.subscribe(subscribeTopic, {qos: 1});
+      connectInfo.innerHTML = connectInfo.innerHTML + "Subscribed! ";
+    },
+    //Gets Called if the connection could not be established
+    onFailure: function (message) {
+      connectInfo.innerHTML = ("Connection failed: " + message.errorMessage);
+    }
+  };
+
+  //Gets called whenever you receive a message for your subscriptions
+  client.onMessageArrived = function (message) {
+    //console.log("get message: " + message);
+    if( message.destinationName == subscribeTopic){
+      
+      var text = message.payloadString;
+      uLocation = JSON.parse(text);
+      
+      
+      //console.log(pos);
+    }
+    
+  };
+
+  //Creates a new Messaging.Message Object and sends it to the HiveMQ MQTT Broker
+  var publish = function (payload, topic, qos) {
+    //Send your message (also possible to serialize it as JSON or protobuf or just use a string, no limitations)
+    var message = new Messaging.Message(payload);
+    message.destinationName = topic;
+    message.qos = qos;
+    client.send(message);
+  }
+  /* - MQTT */
+  
+  // get distance: http://stackoverflow.com/questions/13840516/how-to-find-my-distance-to-a-known-location-in-javascript
+  function distance(lon1, lat1, lon2, lat2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = (lat2-lat1).toRad();  // Javascript functions in radians
+    var dLon = (lon2-lon1).toRad(); 
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1.toRad()) * Math.cos(lat2.toRad()) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2); 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c; // Distance in km
+    return d;
+  }
+  
+  /** Converts numeric degrees to radians */
+  if (typeof(Number.prototype.toRad) === "undefined") {
+    Number.prototype.toRad = function() {
+      return this * Math.PI / 180;
+    }
+  }
+  
+</script>
+</body>
+</html>
