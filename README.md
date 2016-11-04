@@ -41,5 +41,3 @@
   - tap to know tempo
 - <a href="http://jennyhyc.github.io/project/test/Add-Delete-Modify.html" target="_blank">Add-Delete-Modify</a>: 
   Mouse and TouchScreen Control
-
-  
